@@ -1,0 +1,89 @@
+body {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+#container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.6rem;
+  box-sizing: border-box;
+}
+
+#bar-track {
+  height: 1.2rem;
+  background: #222;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+#bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #4dd0e1;
+  transition: width 0.3s ease;
+}
+
+#log {
+  font-family: monospace;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 1.6em;
+  text-align: center;
+}
+
+#info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: #555;
+}
+
+#info .info-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#info .info-label {
+  color: #444;
+}
+
+#info .info-output,
+#info .info-output .info-label {
+  color: #fff;
+}
+
+#actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.4rem;
+}
+
+#cancel-btn {
+  padding: 0.6rem 2.4rem;
+  background: #111;
+  border: 1px solid #444;
+  color: #fff;
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+#cancel-btn:hover:not(:disabled) {
+  background: #222;
+  border-color: #666;
+}
+
+#cancel-btn:disabled {
+  color: #444;
+  cursor: default;
+}

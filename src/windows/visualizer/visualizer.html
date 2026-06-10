@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' file:; script-src 'self' file: blob:; style-src 'unsafe-inline' file:; worker-src blob:; media-src *"
+    />
+
+    <link rel="stylesheet" href="../../components/base.css" />
+
+    <script src="./worklet-patch.js"></script>
+    <script src="../../../node_modules/p5/lib/p5.js"></script>
+    <script src="../../../node_modules/p5/lib/addons/p5.sound.js"></script>
+  </head>
+  <body>
+    <div id="engine" class="engine"></div>
+
+    <div id="controls" class="controls" style="display: none">
+      <div data-vol>
+        <div class="vol-widget"><div class="vol-cover"></div></div>
+      </div>
+
+      <div data-play>
+        <svg><use href="#play" /></svg>
+      </div>
+      <div data-pause>
+        <svg><use href="#pause" /></svg>
+      </div>
+
+      <div data-mic-on>
+        <svg><use href="#mic" /></svg>
+      </div>
+      <div data-mic-off>
+        <svg><use href="#mic-off" /></svg>
+      </div>
+
+      <div data-input-switch></div>
+
+      <div data-bar></div>
+
+      <div data-filename></div>
+      <div data-track-length></div>
+
+      <div data-loop>
+        <svg><use href="#loop" /></svg>
+      </div>
+
+      <div data-fullscreen>
+        <svg><use href="#fullscreen" /></svg>
+      </div>
+      <div data-windowed>
+        <svg><use href="#windowed" /></svg>
+      </div>
+
+      <div data-param>
+        <svg><use href="#param" /></svg>
+      </div>
+
+      <div data-sketch>SKETCH</div>
+    </div>
+
+    <div id="window-size" class="window-size"></div>
+
+    <div id="error-bar" class="error-bar"></div>
+
+    <div id="loader" class="loader"></div>
+
+    <svg
+      id="icon-container"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 0 0"
+      width="0"
+      height="0"
+      style="display: none"
+    >
+      <defs>
+        <symbol id="play" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M19.376 12.4161L8.77735 19.4818C8.54759 19.635 8.23715 19.5729 8.08397 19.3432C8.02922 19.261 8 19.1645 8 19.0658V4.93433C8 4.65818 8.22386 4.43433 8.5 4.43433C8.59871 4.43433 8.69522 4.46355 8.77735 4.5183L19.376 11.584C19.6057 11.7372 19.6678 12.0477 19.5146 12.2774C19.478 12.3323 19.4309 12.3795 19.376 12.4161Z"
+          ></path>
+        </symbol>
+        <symbol id="pause" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 5H8V19H6V5ZM16 5H18V19H16V5Z"></path>
+        </symbol>
+        <symbol id="mic" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M11.9998 1C14.7612 1 16.9998 3.23858 16.9998 6V10C16.9998 12.7614 14.7612 15 11.9998 15C9.23833 15 6.99976 12.7614 6.99976 10V6C6.99976 3.23858 9.23833 1 11.9998 1ZM3.05469 11H5.07065C5.55588 14.3923 8.47329 17 11.9998 17C15.5262 17 18.4436 14.3923 18.9289 11H20.9448C20.4837 15.1716 17.1714 18.4839 12.9998 18.9451V23H10.9998V18.9451C6.82814 18.4839 3.51584 15.1716 3.05469 11Z"
+          ></path>
+        </symbol>
+        <symbol id="mic-off" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M16.4249 17.839C15.3929 18.4228 14.2341 18.8087 13.0002 18.9451V23H11.0002V18.9451C6.82854 18.4839 3.51623 15.1716 3.05509 11H5.07105C5.55627 14.3923 8.47368 17 12.0002 17C13.0503 17 14.0464 16.7688 14.9404 16.3544L13.3902 14.8042C12.9489 14.9317 12.4825 15 12.0002 15C9.23873 15 7.00016 12.7614 7.00016 10V8.41421L1.39355 2.80761L2.80777 1.3934L22.6068 21.1924L21.1925 22.6066L16.4249 17.839ZM19.3747 15.1604L17.9323 13.7179C18.4407 12.9084 18.788 11.9874 18.9293 11H20.9452C20.7754 12.5366 20.2187 13.9565 19.3747 15.1604ZM16.4658 12.2514L7.68575 3.47139C8.55427 1.99268 10.1613 1 12.0002 1C14.7616 1 17.0002 3.23858 17.0002 6V10C17.0002 10.8099 16.8076 11.5748 16.4658 12.2514Z"
+          ></path>
+        </symbol>
+        <symbol id="loop" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M6 4H21C21.5523 4 22 4.44772 22 5V12H20V6H6V9L1 5L6 1V4ZM18 20H3C2.44772 20 2 19.5523 2 19V12H4V18H18V15L23 19L18 23V20Z"
+          ></path>
+        </symbol>
+        <symbol id="fullscreen" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"
+          ></path>
+        </symbol>
+        <symbol id="windowed" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"
+          ></path>
+        </symbol>
+        <symbol id="param" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M11 16V5a1 1 0 1 1 2 0v11h1a1 1 0 0 1 0 2h-1v1a1 1 0 0 1-2 0v-1H10a1 1 0 0 1 0-2h1zm7-10V5a1 1 0 0 1 2 0v1h1a1 1 0 0 1 0 2h-1v11a1 1 0 0 1-2 0V8h-1a1 1 0 0 1 0-2h1zM6 9h1a1 1 0 1 1 0 2H6v8a1 1 0 0 1-2 0V11H3a1 1 0 1 1 0-2h1V5a1 1 0 1 1 2 0v4z"
+          />
+        </symbol>
+        <symbol id="brush" viewBox="0 0 32 32">
+          <path
+            d="M27.555 8.42c-1.355 1.647-5.070 6.195-8.021 9.81l-3.747-3.804c3.389-3.016 7.584-6.744 9.1-8.079 2.697-2.377 5.062-3.791 5.576-3.213 0.322 0.32-0.533 2.396-2.908 5.286zM18.879 19.030c-1.143 1.399-2.127 2.604-2.729 3.343l-4.436-4.323c0.719-0.64 1.916-1.705 3.304-2.939l3.861 3.919zM15.489 23.183v-0.012c-2.575 9.88-14.018 4.2-14.018 4.2s4.801 0.605 4.801-3.873c0-4.341 4.412-4.733 4.683-4.753l4.543 4.427c0 0.001-0.009 0.011-0.009 0.011z"
+            fill="currentColor"
+          ></path>
+        </symbol>
+      </defs>
+    </svg>
+
+    <script type="module" src="./visualizer.js"></script>
+  </body>
+</html>

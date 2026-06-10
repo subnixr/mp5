@@ -1,0 +1,9 @@
+dist/
+node_modules/
+peaks/
+.mp5-previews/
+
+/sketches
+*.mp3
+*.wav
+*.mp4

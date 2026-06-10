@@ -1,0 +1,73 @@
+{
+  "name": "mp5",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js",
+  "author": "subnixr, senisa, Mauro Brianza",
+  "description": "eletron p5 music visualizer/player/renderer",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "start": "electron .",
+    "debug": "MP5_DEBUG=1 electron --inspect=5858 .",
+    "dist": "electron-builder --linux --mac --win",
+    "dist:linux": "electron-builder --linux --x64 --arm64",
+    "dist:mac": "electron-builder --mac --x64 --arm64",
+    "dist:win": "electron-builder --win --x64",
+    "fmt": "prettier --write ."
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "p5": "^1.11.2"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
+    "prettier": "^3.8.1"
+  },
+  "build": {
+    "appId": "mp5",
+    "productName": "mp5",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/p5/lib/**/*",
+      "node_modules/adm-zip/**/*"
+    ],
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "Graphics"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.graphics-design"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}

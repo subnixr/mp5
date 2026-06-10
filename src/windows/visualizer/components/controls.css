@@ -1,0 +1,288 @@
+.controls {
+  --color-dim: #999;
+  --color-light: #fff;
+  --color-on: #4dd0e1;
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  width: 100vw;
+  height: 96px;
+  background: rgba(0, 0, 0, 0.9);
+  box-sizing: border-box;
+
+  display: grid;
+  /*            columns: vol  play bar ctas */
+  grid-template-columns: auto auto 1fr repeat(3, auto);
+  grid-template-rows: 16px 1fr 16px;
+  align-content: stretch;
+  align-items: stretch;
+
+  padding: 0 16px 4px 16px;
+
+  opacity: 0;
+  transition: opacity 200ms;
+
+  font-size: 16px;
+
+  user-select: none;
+}
+
+.controls.pinned {
+  background: rgba(0, 0, 0, 1);
+}
+
+.controls:hover,
+.controls.pinned {
+  opacity: 1;
+}
+
+/* --- GRID --- */
+.controls[data-bar='seek'] {
+  grid-template-areas:
+    '.   .    bar  bar .      .      .    '
+    'vol main bar  bar loop   fs     param'
+    'sw  sw   file len sketch sketch sketch';
+}
+
+.controls[data-bar='freq'] {
+  grid-template-areas:
+    '.   .    .    .   .   .      .    '
+    'vol main bar  bar bar fs     param'
+    'sw  sw   bar  bar bar sketch sketch';
+}
+
+.controls[data-bar='freq'][data-mode='file'] {
+  grid-template-areas:
+    '.   .    .   .   .      .      .    '
+    'vol main bar bar loop   fs     param'
+    'sw  sw   bar bar sketch sketch sketch';
+}
+
+.controls [data-vol] {
+  grid-area: vol;
+}
+.controls [data-play],
+.controls [data-pause],
+.controls [data-mic-on],
+.controls [data-mic-off] {
+  grid-area: main;
+}
+.controls [data-bar] {
+  grid-area: bar;
+}
+.controls [data-loop] {
+  grid-area: loop;
+}
+.controls [data-fullscreen],
+.controls [data-windowed] {
+  grid-area: fs;
+}
+.controls [data-param] {
+  grid-area: param;
+}
+.controls [data-sketch] {
+  grid-area: sketch;
+}
+.controls [data-input-switch] {
+  grid-area: sw;
+}
+.controls [data-track-length] {
+  grid-area: len;
+}
+.controls [data-filename] {
+  grid-area: file;
+}
+
+/* --- BUTTONS --- */
+.controls > * {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+
+  background: transparent;
+  border: none;
+
+  color: var(--color-dim);
+  cursor: pointer;
+  font-size: 16px;
+
+  min-width: 44px;
+}
+
+.controls > *:hover {
+  color: var(--color-light);
+}
+
+.controls > * svg {
+  width: 32px;
+  height: 32px;
+}
+
+.controls [data-play] svg,
+.controls [data-pause] svg {
+  transform: scale(1.3);
+}
+
+/* --- Mode-based button visibility --- */
+
+.controls[data-mode='mic'][data-listen='on'] [data-mic-on] {
+  display: flex;
+}
+
+.controls[data-mode='mic'][data-listen='off'] [data-mic-off] {
+  display: flex;
+}
+
+.controls[data-mode='file'][data-playback='play'] [data-pause] {
+  display: flex;
+}
+
+.controls[data-mode='file'][data-playback='pause'] [data-play] {
+  display: flex;
+}
+
+.controls[data-mode='file'] [data-loop] {
+  display: flex;
+}
+
+.controls[data-loop='on'] [data-loop] {
+  color: var(--color-on);
+}
+
+.controls[data-fullscreen='on'] [data-windowed] {
+  display: flex;
+}
+
+.controls[data-fullscreen='off'] [data-fullscreen] {
+  display: flex;
+}
+
+.controls [data-param],
+.controls [data-sketch] {
+  display: flex;
+}
+
+/* --- Volume widget --- */
+
+.controls [data-vol] {
+  display: flex;
+  min-width: auto;
+  width: 65px;
+}
+
+.controls [data-vol] .vol-widget {
+  position: relative;
+  width: 55px;
+  height: 21px;
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+  background: linear-gradient(to right, #00c850, #ffc800, #dc3232);
+}
+
+.controls [data-vol] .vol-cover {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(100% - var(--vol-pct, 100%));
+  background: #464646;
+  pointer-events: none;
+}
+
+/* --- Bar --- */
+
+.controls [data-bar] {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  align-self: stretch;
+  min-width: 0;
+}
+
+.controls [data-bar] canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* --- Filename --- */
+
+.controls [data-filename] {
+  display: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  font-family: 'Hermit', monospace;
+  font-size: 16px;
+  line-height: 1;
+
+  background: transparent;
+  border: 0;
+  cursor: default;
+  text-align: left;
+
+  color: var(--color-dim);
+}
+
+.controls[data-bar='seek'] [data-filename] {
+  display: block;
+}
+
+/* --- Track length --- */
+
+.controls [data-track-length] {
+  display: none;
+  text-align: right;
+
+  font-family: 'Hermit', monospace;
+  font-size: 16px;
+  line-height: 1;
+
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.controls[data-bar='seek'] [data-track-length] {
+  display: block;
+}
+
+/* --- Input switch --- */
+
+.controls [data-input-switch] {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  min-width: auto;
+
+  font-family: 'Hermit', monospace;
+}
+
+.controls [data-input-switch] [data-mic],
+.controls [data-input-switch] [data-file] {
+  flex: 1;
+  text-align: center;
+  color: var(--color-dim);
+  cursor: pointer;
+}
+
+.controls[data-mode='mic'] [data-input-switch] [data-mic] {
+  color: var(--color-on);
+}
+
+.controls[data-mode='file'] [data-input-switch] [data-file] {
+  color: var(--color-on);
+}
+
+.controls [data-input-switch] [data-mic]:hover,
+.controls [data-input-switch] [data-file]:hover {
+  color: var(--color-light);
+}
+
+.controls[data-mode] [data-input-switch] {
+  display: flex;
+}
