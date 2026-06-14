@@ -541,13 +541,13 @@ export function createMicAudio(setupMic, getMic, p) {
       return fft.getEnergy(20, 20000) / 255;
     },
     timeline(prev, config, smooth = 0.8) {
-      const duration = this.duration();
-      // Negative t: offset from end of track (e.g. -5 → duration - 5).
-      // -0: exactly end of track (duration + 0). Ignored in mic mode (no duration).
+      // Negative t: offset from end of track — no meaning in mic mode (no duration).
+      // Filter them out and sort so interpolation works correctly.
       // 1/t < 0 detects both negative numbers and -0 (1/-0 === -Infinity).
-      const resolved = this.isMic()
-        ? config
-        : config.map(([t, v]) => [1 / t < 0 ? duration + t : t, v]);
+      const resolved = config
+        .filter(([t]) => 1 / t >= 0)
+        .sort(([a], [b]) => a - b);
+      if (!resolved.length) return prev ?? 0;
       const target = interpolateTimeline(this.currentTime(), resolved);
       return prev == null ? target : prev + (target - prev) * smooth;
     },
@@ -629,7 +629,11 @@ export function createVirtualClock() {
       return 0;
     },
     timeline(prev, config, smooth = 0.8) {
-      const target = interpolateTimeline(currentTime(), config);
+      const resolved = config
+        .filter(([t]) => 1 / t >= 0)
+        .sort(([a], [b]) => a - b);
+      if (!resolved.length) return prev ?? 0;
+      const target = interpolateTimeline(currentTime(), resolved);
       return prev == null ? target : prev + (target - prev) * smooth;
     },
     transient() {
