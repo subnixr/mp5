@@ -24,6 +24,8 @@ async function main() {
 
   engine.setRenderFps(frameRate);
   engine.setStartTime(startTime ?? 0);
+
+  console.log('loading audio');
   await engine.loadAudio(audioPath); // loads + pre-computes; sketch awaits this internally
   await engine.loadSketch(sketch ?? eq);
 

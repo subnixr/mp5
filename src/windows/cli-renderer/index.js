@@ -216,9 +216,8 @@ function createRendererWindow(args) {
   const win = new BrowserWindow({
     show: false,
     frame: false,
-    width: args.width,
-    height: args.height,
-    useContentSize: true,
+    transparent: true,
+    resizable: false,
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.mjs'),
       contextIsolation: true,
@@ -229,10 +228,8 @@ function createRendererWindow(args) {
 
   relayConsole(win.webContents, 'cli-renderer');
 
+  win.setContentSize(args.width, args.height);
   win.webContents.setFrameRate(args.frameRate);
-  win.webContents.once('did-finish-load', () => {
-    win.setContentSize(args.width, args.height);
-  });
 
   return win;
 }
