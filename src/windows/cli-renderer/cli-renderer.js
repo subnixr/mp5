@@ -34,8 +34,16 @@ async function main() {
     // This ties animation frames 1:1 to ffmpeg frames, independent of display
     // refresh rate or rAF timing.
     const p = engine.getInstance();
+    const { canvas } = p;
+    const offscreen = new OffscreenCanvas(canvas.width, canvas.height);
+    const ctx2d = offscreen.getContext('2d', { willReadFrequently: true });
     p.noLoop();
-    window.api.onRenderNext((_e) => p.redraw());
+    window.api.onRenderNext((_e) => {
+      p.redraw();
+      ctx2d.drawImage(canvas, 0, 0);
+      const { data } = ctx2d.getImageData(0, 0, canvas.width, canvas.height);
+      window.api.sendFrame(data.buffer);
+    });
     window.api.notifyReady(); // main process sends first render-next, pipeline starts
   }
 }

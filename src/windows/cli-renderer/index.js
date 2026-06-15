@@ -68,22 +68,18 @@ function setupFrameCapture(
   };
   ipcMain.once('cli-renderer-ready', onReady);
 
-  webContents.on('paint', (_event, _dirty, image) => {
+  const onFrame = (_event, buffer) => {
     if (done || !ready) return;
 
-    const { width, height } = image.getSize();
+    const width = args.width;
+    const height = args.height;
 
     if (!ffmpegProcess) {
-      if (width !== args.width || height !== args.height) {
-        process.stderr.write(
-          `[cli-renderer] warn: paint size ${width}x${height} != requested ${args.width}x${args.height}\n`,
-        );
-      }
       const ffArgs = [
         '-f',
         'rawvideo',
         '-pixel_format',
-        'bgra',
+        'rgba',
         '-video_size',
         `${width}x${height}`,
         '-framerate',
@@ -143,13 +139,14 @@ function setupFrameCapture(
       ffmpegProcess.on('close', (code) => {
         if (code !== 0) process.stderr.write(`\nffmpeg exited (${code})\n`);
         done = true;
+        ipcMain.off('cli-renderer-frame', onFrame);
         onDone(code === 0);
       });
     }
 
     if (!ffmpegProcess.stdin.writable) return;
 
-    const ok = ffmpegProcess.stdin.write(image.toBitmap());
+    const ok = ffmpegProcess.stdin.write(Buffer.from(buffer));
     frameCount++;
 
     if (totalFrames != null && frameCount >= totalFrames) {
@@ -167,13 +164,15 @@ function setupFrameCapture(
     } else {
       webContents.send('render-next');
     }
-  });
+  };
+  ipcMain.on('cli-renderer-frame', onFrame);
 
   return {
     cancel: () => {
       if (!done) {
         done = true;
         ipcMain.off('cli-renderer-ready', onReady);
+        ipcMain.off('cli-renderer-frame', onFrame);
         ffmpegProcess?.kill();
       }
     },
@@ -216,7 +215,6 @@ function createRendererWindow(args) {
   const win = new BrowserWindow({
     show: false,
     frame: false,
-    transparent: true,
     resizable: false,
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.mjs'),
@@ -243,12 +241,12 @@ export async function runRender(args) {
   const prefix = `[ffmpeg ${args.output}] `;
 
   setupFrameCapture(win.webContents, args, totalFrames, {
-    onProgress: (d) => process.stderr.write('\r' + prefix + d.line),
+    onProgress: (d) => process.stderr.write('\r\x1b[K' + prefix + d.line),
     onDone: (ok) => {
       if (!ok) process.stderr.write(`\nffmpeg exited with error\n`);
       else
         process.stderr.write(
-          '\r' +
+          '\r\x1b[K' +
             prefix +
             formatProgress({ percent: 100, etaSec: 0, speed: null }, filename) +
             '\n',

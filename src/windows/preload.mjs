@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('api', {
   openSketchInEditor: (filePath) =>
     ipcRenderer.send('open-sketch-in-editor', filePath),
   notifyReady: () => ipcRenderer.send('cli-renderer-ready'),
+  sendFrame: (buffer) => ipcRenderer.send('cli-renderer-frame', buffer),
   openSettings: (defs) => ipcRenderer.send('open-settings', defs),
   pushSettingsDefs: (defs) => ipcRenderer.send('settings-defs-push', defs),
   onFullscreenChange: (cb) => ipcRenderer.on('fullscreen-changed', cb),
