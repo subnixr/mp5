@@ -7,11 +7,11 @@
 }
 
 .ffmpeg-header:hover .ffmpeg-chevron {
-  color: #aaa;
+  color: var(--color-hint);
 }
 
 .ffmpeg-chevron {
-  color: #666;
+  color: var(--color-muted);
   font-size: 1rem;
   transition: transform 0.15s ease;
   transform: rotate(-90deg);
@@ -25,18 +25,18 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  background: #222;
-  border: 1px solid #444;
+  background: var(--color-field);
+  border: 1px solid var(--color-border);
   box-sizing: border-box;
 }
 
 #ffmpeg-args:focus-within {
-  border-color: #4dd0e1;
-  box-shadow: 0 0 0.4rem rgba(0, 210, 255, 0.4);
+  border-color: var(--color-select);
+  box-shadow: 0 0 0.4rem color-mix(in srgb, var(--color-select) 40%, transparent);
 }
 
 .ffmpeg-fixed {
-  color: #555;
+  color: var(--color-subdued);
   font-family: inherit;
   font-size: 1.3rem;
   line-height: 1.6;
@@ -63,7 +63,7 @@
   overflow: hidden;
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--color-fg);
   font-family: inherit;
   font-size: 1.3rem;
   padding: 0 0.8rem;

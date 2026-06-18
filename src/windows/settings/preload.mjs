@@ -13,13 +13,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('settings-defs-push', (_e, defs) => cb(defs)),
   saveParams: (values) => ipcRenderer.invoke('settings-save', values),
   loadParams: () => ipcRenderer.invoke('settings-load'),
-  triggerRender: (params) => ipcRenderer.invoke('trigger-render', { params }),
-  galleryDefs: {
-    dir: definitions.galleryDir ?? null,
-    paths: definitions.galleryPaths ?? null,
-  },
-  updateGallerySettings: (obj) =>
-    ipcRenderer.send('gallery-settings-update', obj),
-  onGalleryStatePush: (cb) =>
-    ipcRenderer.on('gallery-state-push', (_e, state) => cb(state)),
+  browseOutput: (defaultName) =>
+    ipcRenderer.invoke('settings-browse-output', defaultName),
+  triggerRender: (payload) =>
+    ipcRenderer.invoke('trigger-render', payload),
 });

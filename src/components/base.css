@@ -1,3 +1,18 @@
+:root {
+  --color-bg:      #000;
+  --color-fg:      #fff;
+  --color-select:  #4dd0e1;
+  --color-btn:     #111;
+  --color-field:   #222;
+  --color-active:  #333;
+  --color-border:  #444;
+  --color-subdued: #555;
+  --color-muted:   #666;
+  --color-dim:     #999;
+  --color-hint:    #aaa;
+  --color-error:   #d03030;
+}
+
 @font-face {
   font-family: 'Hermit';
   src: url('../assets/Hermit-Regular.otf') format('opentype');
@@ -7,6 +22,31 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 15px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-active);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-subdued);
+}
+
+::-webkit-scrollbar-button {
+  background: var(--color-active);
+  height: 15px;
+}
+
+::-webkit-scrollbar-button:hover {
+  background: var(--color-subdued);
 }
 
 html {
@@ -21,8 +61,8 @@ body {
 body {
   overflow: hidden;
 
-  background: #000;
-  color: #fff;
+  background: var(--color-bg);
+  color: var(--color-fg);
 
   font-family: 'Hermit';
   font-size: 1.6rem;

@@ -36,7 +36,10 @@ for file input, time is bound to track current time in order to make animations 
 when building dom UIs, always use the component pattern found in visualizer.js
 Components are functions that accept just the element, which is also the return itself. The component can decorate the element if needed, along with other stuff needed. Components can be nested.
 
+Always reuse `src/components/ui/` components for any input element (buttons, sliders, text inputs, selects, etc.) — never create raw `<input>`, `<button>`, `<select>` elements directly. If the needed input type is missing from `src/components/ui/`, add it there first, then use it.
+
 # Misc
 
 - default font size in DOM should be 16px
 - window background color is `#000000` (black), defined in `src/components/base.css`
+- avoid `!important` in CSS; fix specificity instead

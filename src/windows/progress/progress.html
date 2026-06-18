@@ -7,7 +7,7 @@
       content="default-src 'self' file:; script-src 'self' file: blob:; style-src 'unsafe-inline' file:;"
     />
     <link rel="stylesheet" href="../../components/base.css" />
-    <link rel="stylesheet" href="./render-progress.css" />
+    <link rel="stylesheet" href="./progress.css" />
   </head>
   <body>
     <div id="container">
@@ -18,9 +18,11 @@
       <div id="info"></div>
       <div id="actions">
         <button id="cancel-btn">Cancel</button>
+        <button id="return-btn" style="display: none">Close</button>
+        <button id="close-app-btn" style="display: none">Quit</button>
       </div>
     </div>
 
-    <script type="module" src="./render-progress.js"></script>
+    <script type="module" src="./progress.js"></script>
   </body>
 </html>

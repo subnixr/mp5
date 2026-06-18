@@ -21,13 +21,15 @@ contextBridge.exposeInMainWorld('args', {
 contextBridge.exposeInMainWorld('api', {
   writeClipboard: (text) => clipboard.writeText(text),
   toggleFullscreen: () => ipcRenderer.send('toggle-fullscreen'),
+  resizeWindow: (w, h) => ipcRenderer.send('resize-window', w, h),
   openAudioPicker: () => ipcRenderer.invoke('open-audio-picker'),
   openSketchPicker: () => ipcRenderer.invoke('open-sketch-picker'),
   openSketchInEditor: (filePath) =>
     ipcRenderer.send('open-sketch-in-editor', filePath),
-  notifyReady: () => ipcRenderer.send('cli-renderer-ready'),
-  sendFrame: (buffer) => ipcRenderer.send('cli-renderer-frame', buffer),
+  notifyReady: () => ipcRenderer.send('renderer-ready'),
+  sendFrame: (buffer) => ipcRenderer.send('renderer-frame', buffer),
   openSettings: (defs) => ipcRenderer.send('open-settings', defs),
+  openGallery: () => ipcRenderer.send('open-gallery'),
   pushSettingsDefs: (defs) => ipcRenderer.send('settings-defs-push', defs),
   onFullscreenChange: (cb) => ipcRenderer.on('fullscreen-changed', cb),
   onSketchChanged: (cb) => ipcRenderer.on('sketch-changed', cb),

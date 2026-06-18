@@ -1,0 +1,281 @@
+/* --- Button --- */
+
+.btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 4.8rem;
+  background: var(--color-btn);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  color: var(--color-fg);
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.btn:focus-visible {
+  outline: 1px solid var(--color-select);
+  outline-offset: -1px;
+}
+
+.btn:hover {
+  background: var(--color-field);
+}
+
+.btn:active {
+  background: var(--color-active);
+}
+
+.action-icon {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+}
+
+.action-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Label --- */
+
+.label {
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Input field wrapper --- */
+
+.input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.input .control {
+  position: relative;
+  display: flex;
+}
+
+.input input,
+.input select,
+.input textarea {
+  width: 100%;
+  height: 3rem;
+  background: var(--color-field);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  color: var(--color-fg);
+  font-family: inherit;
+  padding: 0 0.8rem;
+  box-sizing: border-box;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.input textarea {
+  height: 6rem;
+  resize: vertical;
+  padding: 0.4rem 0.8rem;
+}
+
+.input input:focus,
+.input select:focus,
+.input textarea:focus {
+  border-color: var(--color-select);
+}
+
+/* --- Checkbox --- */
+
+.input:has(input[type='checkbox']) {
+  flex-direction: row;
+  align-items: center;
+  gap: 2rem;
+}
+
+.input input[type='checkbox'] {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-field);
+  border: 1px solid var(--color-border);
+  position: relative;
+}
+
+.input input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: var(--color-select);
+}
+
+/* --- Select indicator --- */
+
+.control.select {
+  position: relative;
+}
+
+.control.select::after {
+  content: '▼';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3rem;
+  height: 3rem;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  font-size: 1.4rem;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+}
+
+.control.select:focus-within::after {
+  border-color: var(--color-select);
+}
+
+/* --- File indicator --- */
+
+.control:has(.file-btn)::after {
+  content: '⋯';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3rem;
+  height: 3rem;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  font-size: 1.4rem;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+}
+
+.control:has(.file-btn):focus-within::after {
+  border-color: var(--color-select);
+}
+
+/* --- File button --- */
+
+.file-btn {
+  height: 3rem;
+  background: var(--color-field);
+  border: 1px solid var(--color-border);
+  color: var(--color-hint);
+  font-family: inherit;
+  font-size: 1.2rem;
+  padding: 0 3.2rem 0 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.file-btn:focus {
+  outline: none;
+  border-color: var(--color-select);
+}
+
+.file-btn:hover {
+  border-color: var(--color-muted);
+}
+
+/* --- Color control --- */
+
+.control.color {
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.color-row {
+  position: relative;
+  display: flex;
+}
+
+.color-row::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3rem;
+  height: 3rem;
+  background-image:
+    linear-gradient(var(--color, #000000ff), var(--color, #000000ff)),
+    repeating-conic-gradient(#888 0% 25%, #ccc 0% 50%);
+  background-size:
+    cover,
+    8px 8px;
+  border: 1px solid var(--color-border);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.control.color:focus-within .color-row::after {
+  border-color: var(--color-select);
+}
+
+.color-row input[type='text'] {
+  padding-right: 3.8rem;
+}
+
+.color-row input[type='color'] {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3rem;
+  height: 3rem;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+/* --- Alpha range slider --- */
+
+.control.color.has-alpha input[type='range'] {
+  width: 100%;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  box-sizing: border-box;
+  background:
+    linear-gradient(to right, transparent, var(--color-rgb, #000)),
+    repeating-conic-gradient(#888 0% 25%, #ccc 0% 50%) 0 0 / 8px 8px;
+  cursor: pointer;
+}
+
+.control.color.has-alpha input[type='range']:focus {
+  border-color: var(--color-select);
+}
+
+.control.color.has-alpha input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1.4rem;
+  background: var(--color-fg);
+  border: 1px solid var(--color-muted);
+  cursor: pointer;
+}
+
+.control.color.has-alpha:focus-within input[type='range']::-webkit-slider-thumb {
+  background: var(--color-select);
+}

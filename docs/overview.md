@@ -41,6 +41,7 @@ The controls bar appears at the bottom of the window. It auto-hides after 3 seco
 - **Seek / frequency bar** — waveform of the loaded file with a playhead (file mode), or a live frequency spectrum (mic mode or when switched manually).
 - **Volume slider** — current output volume level.
 - **Params** — opens the settings window to tweak sketch parameters in real time.
+- **Gallery** — opens the gallery window to manage the sketch queue (gallery mode only).
 - **Sketch picker** — shows the current sketch filename; allows loading a different sketch.
 - **Fullscreen** — toggles between windowed and fullscreen.
 
@@ -55,11 +56,13 @@ The controls bar appears at the bottom of the window. It auto-hides after 3 seco
 | **Seek / frequency bar** | Seek to position (file mode)                     | Click        |
 |                          | Toggle waveform / spectrum view (file mode only) | Right-click  |
 | **Volume slider**        | Set volume                                       | Drag         |
-|                          | Adjust volume                                    | Scroll wheel |
-|                          | Toggle mute / unmute                             | Right-click  |
+|                          | Adjust volume (shows volume OSD)                 | Scroll wheel |
+|                          | Toggle mute / unmute (shows volume OSD)          | Right-click  |
 | **Params**               | Open settings window                             | Click        |
+| **Gallery**              | Open gallery window                              | Click        |
 | **Sketch picker**        | Open sketch file picker                          | Click        |
 |                          | Open current sketch in system editor             | Right-click  |
+|                          | Open gallery directory in file manager           | Right-click (gallery mode) |
 | **Fullscreen**           | Toggle fullscreen                                | Click        |
 
 ### Keyboard shortcuts
@@ -132,7 +135,7 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 
 ### ffmpeg (render mode)
 
-The render config window has a **format** dropdown that controls the output codec:
+The settings window has a **format** dropdown that controls the output codec:
 
 | Format   | Codec flags                                    | Alpha |
 | -------- | ---------------------------------------------- | ----- |

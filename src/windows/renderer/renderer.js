@@ -1,4 +1,4 @@
-import Engine from '../../components/engine.js';
+import Engine from '../../components/engine/index.js';
 import eq from '../visualizer/sketches/eq.js';
 import { handleErrors } from '../error.js';
 

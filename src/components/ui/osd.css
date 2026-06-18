@@ -1,0 +1,34 @@
+.osd {
+  position: fixed;
+  z-index: 20;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 16px 24px;
+}
+
+.osd.hidden {
+  display: none;
+}
+
+.osd [data-osd-vol] {
+  cursor: pointer;
+}
+
+.osd .vol-widget {
+  position: relative;
+  width: 110px;
+  height: 42px;
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+  background: linear-gradient(to right, #00c850, #ffc800, #dc3232);
+}
+
+.osd .vol-cover {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(100% - var(--vol-pct, 100%));
+  background: #464646;
+}

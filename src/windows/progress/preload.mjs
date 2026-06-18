@@ -10,5 +10,6 @@ contextBridge.exposeInMainWorld('args', {
 
 contextBridge.exposeInMainWorld('api', {
   cancelRender: () => ipcRenderer.send('cancel-render'),
-  onProgress: (cb) => ipcRenderer.on('render-progress', (_e, data) => cb(data)),
+  returnToAnimation: () => ipcRenderer.send('return-to-animation'),
+  onProgress: (cb) => ipcRenderer.on('progress', (_e, data) => cb(data)),
 });

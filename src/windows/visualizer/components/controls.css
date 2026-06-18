@@ -1,7 +1,4 @@
 .controls {
-  --color-dim: #999;
-  --color-light: #fff;
-  --color-on: #4dd0e1;
   position: fixed;
   z-index: 10;
   left: 0;
@@ -15,7 +12,7 @@
 
   display: grid;
   /*            columns: vol  play bar ctas */
-  grid-template-columns: auto auto 1fr repeat(3, auto);
+  grid-template-columns: auto auto 1fr repeat(4, auto);
   grid-template-rows: 16px 1fr 16px;
   align-content: stretch;
   align-items: stretch;
@@ -42,23 +39,23 @@
 /* --- GRID --- */
 .controls[data-bar='seek'] {
   grid-template-areas:
-    '.   .    bar  bar .      .      .    '
-    'vol main bar  bar loop   fs     param'
-    'sw  sw   file len sketch sketch sketch';
+    '.   .    bar  bar .      .      .      .      '
+    'vol main bar  bar loop   fs     param  gallery'
+    'sw  sw   file len sketch sketch sketch sketch ';
 }
 
 .controls[data-bar='freq'] {
   grid-template-areas:
-    '.   .    .    .   .   .      .    '
-    'vol main bar  bar bar fs     param'
-    'sw  sw   bar  bar bar sketch sketch';
+    '.   .    .    .   .   .      .      .      '
+    'vol main bar  bar bar fs     param  gallery'
+    'sw  sw   bar  bar bar sketch sketch sketch ';
 }
 
 .controls[data-bar='freq'][data-mode='file'] {
   grid-template-areas:
-    '.   .    .   .   .      .      .    '
-    'vol main bar bar loop   fs     param'
-    'sw  sw   bar bar sketch sketch sketch';
+    '.   .    .   .   .      .      .      .      '
+    'vol main bar bar loop   fs     param  gallery'
+    'sw  sw   bar bar sketch sketch sketch sketch ';
 }
 
 .controls [data-vol] {
@@ -82,6 +79,9 @@
 }
 .controls [data-param] {
   grid-area: param;
+}
+.controls [data-gallery] {
+  grid-area: gallery;
 }
 .controls [data-sketch] {
   grid-area: sketch;
@@ -114,7 +114,7 @@
 }
 
 .controls > *:hover {
-  color: var(--color-light);
+  color: var(--color-fg);
 }
 
 .controls > * svg {
@@ -150,7 +150,7 @@
 }
 
 .controls[data-loop='on'] [data-loop] {
-  color: var(--color-on);
+  color: var(--color-select);
 }
 
 .controls[data-fullscreen='on'] [data-windowed] {
@@ -163,6 +163,10 @@
 
 .controls [data-param],
 .controls [data-sketch] {
+  display: flex;
+}
+
+.controls[data-gallery-mode] [data-gallery] {
   display: flex;
 }
 
@@ -271,16 +275,16 @@
 }
 
 .controls[data-mode='mic'] [data-input-switch] [data-mic] {
-  color: var(--color-on);
+  color: var(--color-select);
 }
 
 .controls[data-mode='file'] [data-input-switch] [data-file] {
-  color: var(--color-on);
+  color: var(--color-select);
 }
 
 .controls [data-input-switch] [data-mic]:hover,
 .controls [data-input-switch] [data-file]:hover {
-  color: var(--color-light);
+  color: var(--color-fg);
 }
 
 .controls[data-mode] [data-input-switch] {

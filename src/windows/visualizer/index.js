@@ -6,9 +6,9 @@ import AdmZip from 'adm-zip';
 import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
 import { openSettingsWindow } from '../settings/index.js';
-import { openRenderProgressWindow } from '../render-progress/index.js';
-import { openRenderConfigWindow } from '../render-config/index.js';
-import { runRenderWithProgress } from '../cli-renderer/index.js';
+import { openGalleryWindow } from '../gallery/index.js';
+import { openRenderProgressWindow } from '../progress/index.js';
+import { runRenderWithProgress } from '../renderer/index.js';
 
 function extractZipSketch(zipPath, destDir) {
   const zip = new AdmZip(zipPath);
@@ -124,14 +124,39 @@ export function runVisualizer(args) {
 
   ipcMain.on('toggle-fullscreen', onToggleFullscreen);
 
+  const onResizeWindow = (_e, w, h) => {
+    if (!win.isDestroyed()) win.setSize(Math.round(w), Math.round(h));
+  };
+  ipcMain.on('resize-window', onResizeWindow);
+
   let settingsWin = null;
+  let galleryWin = null;
+
+  const onOpenGallery = () => {
+    if (galleryWin && !galleryWin.isDestroyed()) {
+      galleryWin.focus();
+      return;
+    }
+    galleryWin = openGalleryWindow(win);
+    galleryWin.webContents.once('did-finish-load', () => {
+      if (!win.isDestroyed()) win.webContents.send('push-gallery-state-request');
+    });
+    galleryWin.on('closed', () => {
+      galleryWin = null;
+    });
+  };
+
+  ipcMain.on('open-gallery', onOpenGallery);
 
   const onOpenSettings = (_e, defs) => {
     if (settingsWin && !settingsWin.isDestroyed()) {
       settingsWin.focus();
       return;
     }
-    settingsWin = openSettingsWindow(defs, win, { galleryMode: !!galleryDir });
+    const audioBase = args.audioPath
+      ? path.basename(args.audioPath, path.extname(args.audioPath))
+      : null;
+    settingsWin = openSettingsWindow({ ...defs, audioBase, initialRendering: args.initialRendering ?? null }, win);
     settingsWin.webContents.once('did-finish-load', () => {
       if (!win.isDestroyed())
         win.webContents.send('push-gallery-state-request');
@@ -211,72 +236,53 @@ export function runVisualizer(args) {
 
   ipcMain.on('open-sketch-in-editor', onOpenSketchInEditor);
 
-  const onTriggerRender = (_e, { params }) => {
-    openRenderConfigWindow({
+  const onTriggerRender = async (_e, { params, rendering, output }) => {
+    const sketchBase = args.sketchPath
+      ? path.basename(args.sketchPath, '.js')
+      : null;
+    const audioBase = args.audioPath ? path.basename(args.audioPath) : null;
+    const titleParts = ['mp5 - renderer', sketchBase, audioBase].filter(Boolean);
+    const title = titleParts.join(' - ');
+
+    const renderArgs = {
+      ...args,
+      mode: 'render',
+      output,
+      frameRate: rendering.frameRate,
+      ffmpegExtra: rendering.ffmpegExtra,
+      width: rendering.width,
+      height: rendering.height,
+      startTime: rendering.startTime ?? 0,
+      length: rendering.length ?? null,
+      initialParams: params,
+    };
+
+    const renderRef = { cancel: null };
+
+    const progressWin = openRenderProgressWindow({
+      title,
       sketchPath: args.sketchPath,
       audioPath: args.audioPath,
-      width: 1920,
-      height: 1080,
-      params,
-      visWin: win,
-      onConfirm: async ({
-        output,
-        frameRate,
-        width: renderWidth,
-        height: renderHeight,
-        ffmpegExtra,
-        startTime: renderStartTime,
-        length: renderLength,
-        params: confirmedParams,
-      }) => {
-        const sketchBase = args.sketchPath
-          ? path.basename(args.sketchPath, '.js')
-          : null;
-        const audioBase = args.audioPath ? path.basename(args.audioPath) : null;
-        const titleParts = ['mp5 - cli-renderer', sketchBase, audioBase].filter(
-          Boolean,
-        );
-        const title = titleParts.join(' - ');
-
-        const renderArgs = {
-          ...args,
-          mode: 'render',
-          output,
-          frameRate,
-          ffmpegExtra,
-          width: renderWidth,
-          height: renderHeight,
-          startTime: renderStartTime ?? 0,
-          length: renderLength ?? null,
-          initialParams: confirmedParams,
-        };
-
-        const renderRef = { cancel: null };
-
-        const progressWin = openRenderProgressWindow({
-          title,
-          sketchPath: args.sketchPath,
-          audioPath: args.audioPath,
-          output,
-          onCancel: () => {
-            renderRef.cancel?.();
-            runVisualizer({ ...args, initialParams: confirmedParams });
-          },
-        });
-
-        // close child windows before visualizer so window-all-closed isn't triggered
-        if (settingsWin && !settingsWin.isDestroyed()) settingsWin.close();
-        win.close();
-
-        const { cancel } = await runRenderWithProgress(renderArgs, {
-          onProgress: (data) => progressWin.sendProgress(data),
-          onDone: (success) =>
-            progressWin.sendProgress({ done: true, success }),
-        });
-        renderRef.cancel = cancel;
+      output,
+      onCancel: () => {
+        renderRef.cancel?.();
+        runVisualizer({ ...args, initialParams: params });
       },
-      onCancel: () => {},
+      onReturnToAnimation: () => {
+        runVisualizer({ ...args, initialParams: params });
+      },
     });
+
+    // close child windows before visualizer so window-all-closed isn't triggered
+    if (settingsWin && !settingsWin.isDestroyed()) settingsWin.close();
+    if (galleryWin && !galleryWin.isDestroyed()) galleryWin.close();
+    win.close();
+
+    const { cancel } = await runRenderWithProgress(renderArgs, {
+      onProgress: (data) => progressWin.sendProgress(data),
+      onDone: (success) => progressWin.sendProgress({ done: true, success }),
+    });
+    renderRef.cancel = cancel;
   };
 
   ipcMain.handle('trigger-render', onTriggerRender);
@@ -333,7 +339,7 @@ export function runVisualizer(args) {
   ipcMain.on('open-gallery-dir', onOpenGalleryDir);
 
   const onGalleryStatePush = (_e, obj) => {
-    settingsWin?.webContents.send('gallery-state-push', obj);
+    galleryWin?.webContents.send('gallery-state-push', obj);
   };
 
   ipcMain.on('gallery-state-push', onGalleryStatePush);
@@ -346,6 +352,8 @@ export function runVisualizer(args) {
 
   win.on('closed', () => {
     ipcMain.off('toggle-fullscreen', onToggleFullscreen);
+    ipcMain.off('resize-window', onResizeWindow);
+    ipcMain.off('open-gallery', onOpenGallery);
     ipcMain.removeHandler('open-audio-picker');
     ipcMain.removeHandler('open-sketch-picker');
     ipcMain.off('open-sketch-in-editor', onOpenSketchInEditor);

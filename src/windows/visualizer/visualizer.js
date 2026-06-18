@@ -1,6 +1,6 @@
 import Loader from './components/loader.js';
 import ErrorBar from './components/errorBar.js';
-import Engine from '../../components/engine.js';
+import Engine from '../../components/engine/index.js';
 import Controls from './components/controls.js';
 import WindowSize from './components/windowSize.js';
 import { handleErrors } from '../error.js';
@@ -11,7 +11,11 @@ const loader = Loader(document.querySelector('#loader'));
 const errorBar = ErrorBar(document.querySelector('#error-bar'));
 const engine = Engine(document.querySelector('#engine'));
 const controls = Controls(document.querySelector('#controls'));
-WindowSize(document.querySelector('#window-size'));
+const windowSize = WindowSize(document.querySelector('#window-size'));
+
+windowSize.addEventListener('resize-request', (evt) => {
+  window.api.resizeWindow(evt.detail.w, evt.detail.h);
+});
 
 let gallery = null;
 let isSwitching = false;

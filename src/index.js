@@ -6,7 +6,7 @@ import AdmZip from 'adm-zip';
 
 import { showHelp, parseArgs } from './cli.js';
 import { runVisualizer } from './windows/visualizer/index.js';
-import { runRender } from './windows/cli-renderer/index.js';
+import { runRender } from './windows/renderer/index.js';
 
 function resolveZipSketch(zipPath, tmpDir) {
   const zip = new AdmZip(zipPath);

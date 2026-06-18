@@ -22,9 +22,9 @@ MP5 scans the directory at startup for `.zip` files and subdirectories. Each ite
 
 Switching is instant — the new sketch fades in over the currently playing audio without interrupting playback.
 
-## Settings window — Gallery tab
+## Gallery window
 
-Open the settings window (`F12` or the **Params** button) to find the **Gallery** tab alongside the usual Params tab. It gives you full control over the queue:
+Click the **Gallery** button in the controls bar to open the gallery window. It gives you full control over the queue:
 
 ### Sketch cards
 

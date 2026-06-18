@@ -1,7 +1,11 @@
+import Button from '../../components/ui/button.js';
+
 const barFill = document.querySelector('#bar-fill');
 const log = document.querySelector('#log');
 const info = document.querySelector('#info');
-const cancelBtn = document.querySelector('#cancel-btn');
+const cancelBtn = Button(document.querySelector('#cancel-btn'));
+const returnBtn = Button(document.querySelector('#return-btn'));
+const closeAppBtn = Button(document.querySelector('#close-app-btn'));
 
 function infoLine(label, value) {
   if (!value) return;
@@ -33,13 +37,16 @@ cancelBtn.addEventListener('click', () => {
   window.api.cancelRender();
 });
 
+returnBtn.addEventListener('click', () => window.api.returnToAnimation());
+closeAppBtn.addEventListener('click', () => window.close());
+
 window.api.onProgress((data) => {
   if (data.done) {
     barFill.style.width = '100%';
     log.textContent = data.success ? 'Done' : 'Render failed';
-    cancelBtn.textContent = 'Close';
-    cancelBtn.disabled = false;
-    cancelBtn.addEventListener('click', () => window.close(), { once: true });
+    cancelBtn.style.display = 'none';
+    returnBtn.style.display = '';
+    closeAppBtn.style.display = '';
     return;
   }
   if (data.percent != null) barFill.style.width = data.percent.toFixed(1) + '%';

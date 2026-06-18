@@ -11,6 +11,7 @@ export function openRenderProgressWindow({
   audioPath,
   output,
   onCancel,
+  onReturnToAnimation,
 }) {
   const win = new BrowserWindow({
     width: 640,
@@ -33,17 +34,24 @@ export function openRenderProgressWindow({
 
   if (process.env.MP5_DEBUG) win.webContents.openDevTools();
 
-  relayConsole(win.webContents, 'render-progress');
+  relayConsole(win.webContents, 'progress');
 
   const onCancelIpc = () => {
     if (!win.isDestroyed()) win.close();
     onCancel();
   };
 
+  const onReturnToAnimationIpc = () => {
+    if (!win.isDestroyed()) win.close();
+    onReturnToAnimation?.();
+  };
+
   ipcMain.once('cancel-render', onCancelIpc);
+  ipcMain.once('return-to-animation', onReturnToAnimationIpc);
 
   win.on('closed', () => {
     ipcMain.off('cancel-render', onCancelIpc);
+    ipcMain.off('return-to-animation', onReturnToAnimationIpc);
   });
 
   const query = {};
@@ -51,11 +59,11 @@ export function openRenderProgressWindow({
   if (audioPath) query.audioPath = audioPath;
   if (output) query.output = output;
 
-  win.loadFile(path.join(__dirname, 'render-progress.html'), { query });
+  win.loadFile(path.join(__dirname, 'progress.html'), { query });
 
   return {
     sendProgress: (data) => {
-      if (!win.isDestroyed()) win.webContents.send('render-progress', data);
+      if (!win.isDestroyed()) win.webContents.send('progress', data);
     },
     close: () => {
       if (!win.isDestroyed()) win.close();

@@ -6,10 +6,10 @@ import { relayConsole } from '../error.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export function openSettingsWindow(defs, visWin, opts = {}) {
+export function openSettingsWindow(defs, visWin) {
   const win = new BrowserWindow({
-    width: opts.galleryMode ? 840 : 420,
-    minWidth: opts.galleryMode ? 840 : 420,
+    width: 840,
+    minWidth: 360,
     resizable: true,
     title: 'mp5 - settings',
     parent: visWin,
@@ -68,11 +68,20 @@ export function openSettingsWindow(defs, visWin, opts = {}) {
     return JSON.parse(await fs.promises.readFile(filePaths[0], 'utf-8'));
   };
 
+  const onBrowseOutput = async (_e, defaultName) => {
+    const { canceled, filePath } = await dialog.showSaveDialog(win, {
+      defaultPath: path.join(process.cwd(), defaultName),
+      filters: [{ name: 'Video', extensions: ['mp4', 'mov', 'webm'] }],
+    });
+    return canceled ? null : filePath;
+  };
+
   ipcMain.on('settings-defs-push', onDefsPush);
   ipcMain.on('settings-update', onParamsUpdate);
   ipcMain.handle('settings-request-file', onRequestFile);
   ipcMain.handle('settings-save', onSave);
   ipcMain.handle('settings-load', onLoad);
+  ipcMain.handle('settings-browse-output', onBrowseOutput);
 
   win.on('closed', () => {
     ipcMain.off('settings-defs-push', onDefsPush);
@@ -80,6 +89,7 @@ export function openSettingsWindow(defs, visWin, opts = {}) {
     ipcMain.removeHandler('settings-request-file');
     ipcMain.removeHandler('settings-save');
     ipcMain.removeHandler('settings-load');
+    ipcMain.removeHandler('settings-browse-output');
   });
 
   win.loadFile(path.join(__dirname, 'settings.html'), {

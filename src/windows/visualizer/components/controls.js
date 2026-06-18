@@ -1,4 +1,6 @@
 import Bar from './bar.js';
+import { Label } from '../../../components/ui/inputs.js';
+import OSD from '../../../components/ui/osd.js';
 
 import sheet from './controls.css' with { type: 'css' };
 document.adoptedStyleSheets.push(sheet);
@@ -51,14 +53,14 @@ function Volume(elem) {
 }
 
 function Switch(elem) {
-  const mic = document.createElement('div');
+  const mic = Label(document.createElement('div'));
   mic.setAttribute('data-mic', '');
   mic.textContent = 'MIC';
   mic.addEventListener('click', () => {
     elem.dispatchEvent(new CustomEvent('mic'));
   });
 
-  const file = document.createElement('div');
+  const file = Label(document.createElement('div'));
   file.setAttribute('data-file', '');
   file.textContent = 'FILE';
   file.addEventListener('click', () => {
@@ -169,6 +171,9 @@ export default function Controls(elem) {
         });
       },
     }),
+    gallery: withEvents(elem.querySelector('[data-gallery]'), {
+      click: () => window.api.openGallery(),
+    }),
     sketch: withEvents(elem.querySelector('[data-sketch]'), {
       click: async () => {
         const picked = await window.api.openSketchPicker();
@@ -187,6 +192,19 @@ export default function Controls(elem) {
       },
     }),
   };
+
+  const osd = OSD(document.querySelector('[data-osd]'));
+  const osdVol = withEvents(Volume(osd.querySelector('[data-osd-vol]')), {
+    change: (evt) => {
+      engine?.setVolume(evt.detail);
+      showVolumeOSD(evt.detail);
+    },
+  });
+
+  function showVolumeOSD(v) {
+    osdVol.setLevel(v);
+    osd.show(500);
+  }
 
   function updateDom() {
     elem.setAttribute('data-fullscreen', fullscreen ? 'on' : 'off');
@@ -236,6 +254,7 @@ export default function Controls(elem) {
         engine?.seek(engine?.getDuration());
       } else if (evt.code === 'KeyM') {
         toggleMute();
+        showVolumeOSD(engine?.getVolume() ?? 0);
       }
     });
 
@@ -243,7 +262,12 @@ export default function Controls(elem) {
       'wheel',
       (evt) => {
         const delta = evt.deltaY < 0 ? 0.05 : -0.05;
-        engine?.setVolume(engine?.getVolume() + delta);
+        const vol = Math.min(
+          1,
+          Math.max(0, (engine?.getVolume() ?? 0) + delta),
+        );
+        engine?.setVolume(vol);
+        showVolumeOSD(vol);
       },
       { passive: true },
     );
@@ -298,6 +322,10 @@ export default function Controls(elem) {
 
   if (!window.args.sketchPath) {
     elem.pin();
+  }
+
+  if (window.args.galleryDir) {
+    elem.setAttribute('data-gallery-mode', '');
   }
 
   bindShortcuts();

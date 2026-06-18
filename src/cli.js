@@ -51,7 +51,7 @@ Global Mouse/Keyboard shortcuts (preview mode):
   F12                       Open settings window
 
 Environment variables:
-  MP5_FFMPEG_EXTRA  Extra ffmpeg encoding args for CLI render (overrides default -c:v/-pix_fmt; -vf scale always applied from -g)
+  MP5_FFMPEG_EXTRA  Override ffmpeg encoding args (default: inferred from -o extension: mp4/mov/webm; -vf scale always applied from -g)
 
 Control bar widget interactions:
   MIC / FILE switch   Click MIC: start mic input
@@ -64,8 +64,10 @@ Control bar widget interactions:
                       Scroll: adjust volume
                       RightClick: toggle mute
   Params              Click: open settings window
+  Gallery             Click: open gallery window (gallery mode only)
   Sketch picker       Click: open sketch file picker
                       RightClick: open current sketch in editor
+                      RightClick (gallery mode): open gallery directory in file manager
   Fullscreen          Click: toggle fullscreen
 `);
 }
@@ -134,7 +136,7 @@ export function parseArgs(rawArgv) {
     throw new Error('-S is only valid in render mode (requires -o OUTPUT)');
   }
   if (raw.output && !raw.audio && !raw.length) {
-    throw new Error('render mode requires AUDIO or -L [[HH:]MM:]SS');
+    throw new Error('render mode without AUDIO requires -L [[HH:]MM:]SS');
   }
 
   if (raw.sketch) {
@@ -144,20 +146,31 @@ export function parseArgs(rawArgv) {
   }
 
   let initialParams = {};
+  let initialRendering = {};
+
+  function applyPreset(preset, source) {
+    if (typeof preset !== 'object' || Array.isArray(preset))
+      throw new Error(`preset must be a JSON object: ${source}`);
+    if ('params' in preset || 'rendering' in preset) {
+      if (preset.params) Object.assign(initialParams, preset.params);
+      if (preset.rendering) Object.assign(initialRendering, preset.rendering);
+    } else {
+      Object.assign(initialParams, preset);
+    }
+  }
+
   if (raw.paramsFile) {
     if (!fs.existsSync(raw.paramsFile))
       throw new Error(`params file not found: ${raw.paramsFile}`);
-    const parsed = JSON.parse(fs.readFileSync(raw.paramsFile, 'utf8'));
-    if (typeof parsed !== 'object' || Array.isArray(parsed))
-      throw new Error(`params file must be a JSON object: ${raw.paramsFile}`);
-    Object.assign(initialParams, parsed);
+    applyPreset(JSON.parse(fs.readFileSync(raw.paramsFile, 'utf8')), raw.paramsFile);
   }
   if (raw.paramsJson) {
-    const parsed = JSON.parse(raw.paramsJson);
-    if (typeof parsed !== 'object' || Array.isArray(parsed))
-      throw new Error('inline params must be a JSON object');
-    Object.assign(initialParams, parsed);
+    applyPreset(JSON.parse(raw.paramsJson), 'inline JSON');
   }
+
+  if (raw.width != null) initialRendering.width = raw.width;
+  if (raw.height != null) initialRendering.height = raw.height;
+  if (raw.frameRate != null) initialRendering.fps = raw.frameRate;
   if (raw.audio) {
     if (!fs.existsSync(raw.audio)) {
       throw new Error(`audio not found: ${raw.audio}`);
@@ -195,5 +208,6 @@ export function parseArgs(rawArgv) {
     width: raw.width ?? DEFAULT_WIDTH,
     height: raw.height ?? DEFAULT_HEIGHT,
     initialParams,
+    initialRendering: Object.keys(initialRendering).length ? initialRendering : null,
   };
 }

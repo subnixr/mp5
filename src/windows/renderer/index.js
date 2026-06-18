@@ -6,6 +6,12 @@ import { relayConsole } from '../error.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const FORMAT_PRESETS = {
+  mp4: '-c:v libx264 -pix_fmt yuv420p',
+  mov: '-c:v prores_ks -pix_fmt yuva444p10le',
+  webm: '-c:v libvpx-vp9 -pix_fmt yuva420p -auto-alt-ref 0',
+};
+
 function progressFromFfmpeg(block, totalFrames, fps) {
   const data = {};
   for (const line of block) {
@@ -66,7 +72,7 @@ function setupFrameCapture(
     ready = true;
     webContents.send('render-next');
   };
-  ipcMain.once('cli-renderer-ready', onReady);
+  ipcMain.once('renderer-ready', onReady);
 
   const onFrame = (_event, buffer) => {
     if (done || !ready) return;
@@ -96,9 +102,14 @@ function setupFrameCapture(
       }
       ffArgs.push('-vf', `scale=${args.width}:${args.height},format=yuva420p`);
       const extraStr = args.ffmpegExtra ?? process.env.MP5_FFMPEG_EXTRA ?? null;
-      const extra = extraStr
-        ? extraStr.trim().split(/\s+/).filter(Boolean)
-        : ['-c:v', 'libx264', '-pix_fmt', 'yuv420p'];
+      let extra;
+      if (extraStr) {
+        extra = extraStr.trim().split(/\s+/).filter(Boolean);
+      } else {
+        const ext = path.extname(args.output).toLowerCase().slice(1);
+        const preset = FORMAT_PRESETS[ext] ?? FORMAT_PRESETS.mp4;
+        extra = preset.trim().split(/\s+/).filter(Boolean);
+      }
       ffArgs.push(
         ...extra,
         '-progress',
@@ -139,7 +150,7 @@ function setupFrameCapture(
       ffmpegProcess.on('close', (code) => {
         if (code !== 0) process.stderr.write(`\nffmpeg exited (${code})\n`);
         done = true;
-        ipcMain.off('cli-renderer-frame', onFrame);
+        ipcMain.off('renderer-frame', onFrame);
         onDone(code === 0);
       });
     }
@@ -165,14 +176,14 @@ function setupFrameCapture(
       webContents.send('render-next');
     }
   };
-  ipcMain.on('cli-renderer-frame', onFrame);
+  ipcMain.on('renderer-frame', onFrame);
 
   return {
     cancel: () => {
       if (!done) {
         done = true;
-        ipcMain.off('cli-renderer-ready', onReady);
-        ipcMain.off('cli-renderer-frame', onFrame);
+        ipcMain.off('renderer-ready', onReady);
+        ipcMain.off('renderer-frame', onFrame);
         ffmpegProcess?.kill();
       }
     },
@@ -224,7 +235,7 @@ function createRendererWindow(args) {
     },
   });
 
-  relayConsole(win.webContents, 'cli-renderer');
+  relayConsole(win.webContents, 'renderer');
 
   win.setContentSize(args.width, args.height);
   win.webContents.setFrameRate(args.frameRate);
@@ -255,7 +266,7 @@ export async function runRender(args) {
     },
   });
 
-  win.loadFile(path.join(__dirname, 'cli-renderer.html'), {
+  win.loadFile(path.join(__dirname, 'renderer.html'), {
     query: { args: JSON.stringify(args) },
   });
 }
@@ -278,7 +289,7 @@ export async function runRenderWithProgress(args, { onProgress, onDone }) {
     },
   );
 
-  win.loadFile(path.join(__dirname, 'cli-renderer.html'), {
+  win.loadFile(path.join(__dirname, 'renderer.html'), {
     query: { args: JSON.stringify(args) },
   });
 
