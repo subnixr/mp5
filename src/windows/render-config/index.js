@@ -17,9 +17,9 @@ export function openRenderConfigWindow({
 }) {
   const win = new BrowserWindow({
     width: 480,
-    height: 380,
+    height: 400,
     minWidth: 480,
-    minHeight: 380,
+    minHeight: 400,
     resizable: true,
     title: 'mp5 - render',
     parent: visWin,

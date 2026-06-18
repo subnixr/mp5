@@ -39,3 +39,4 @@ Components are functions that accept just the element, which is also the return 
 # Misc
 
 - default font size in DOM should be 16px
+- window background color is `#000000` (black), defined in `src/components/base.css`

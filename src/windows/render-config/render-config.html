@@ -18,7 +18,7 @@
           <button id="browse-btn">…</button>
         </div>
       </div>
-      <div class="field-row">
+      <div class="field-row field-row-4">
         <div class="field">
           <span class="label">width</span>
           <input id="width-input" type="number" min="1" />
@@ -30,6 +30,16 @@
         <div class="field">
           <span class="label">fps</span>
           <input id="fps-input" type="number" min="1" max="120" value="60" />
+        </div>
+        <div class="field">
+          <span class="label">format</span>
+          <div class="control select">
+            <select id="format-select">
+              <option value="mp4">mp4</option>
+              <option value="mov" selected>mov</option>
+              <option value="webm">webm</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="field-row field-row-2">
@@ -49,13 +59,11 @@
             type="text"
             placeholder="[[HH:]MM:]SS"
             spellcheck="false"
+            data-placeholder-audio="full track"
           />
         </div>
       </div>
-      <div class="field">
-        <span class="label">ffmpeg extra args</span>
-        <textarea id="ffmpeg-extra" spellcheck="false"></textarea>
-      </div>
+      <div id="ffmpeg-field" class="field"></div>
     </div>
 
     <div id="actions">

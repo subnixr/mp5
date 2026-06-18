@@ -40,6 +40,7 @@ async function main() {
     p.noLoop();
     window.api.onRenderNext((_e) => {
       p.redraw();
+      ctx2d.clearRect(0, 0, canvas.width, canvas.height);
       ctx2d.drawImage(canvas, 0, 0);
       const { data } = ctx2d.getImageData(0, 0, canvas.width, canvas.height);
       window.api.sendFrame(data.buffer);

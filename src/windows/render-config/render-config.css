@@ -8,10 +8,13 @@ body {
 #container {
   flex: 1;
   display: grid;
-  grid-template-rows: auto auto auto 1fr;
+  grid-template-rows: auto auto auto auto;
   gap: 1.6rem;
   padding: 1.6rem;
   min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  align-content: start;
 }
 
 .field {
@@ -29,6 +32,10 @@ body {
 
 .field-row-2 {
   grid-template-columns: 1fr 1fr;
+}
+
+.field-row-4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
 }
 
 .label {
@@ -68,6 +75,45 @@ input:focus {
   box-shadow: 0 0 0.4rem rgba(0, 210, 255, 0.4);
 }
 
+.control.select {
+  position: relative;
+  display: flex;
+}
+
+.control.select select {
+  width: 100%;
+  height: 3rem;
+  background: #222;
+  border: 1px solid #444;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.4rem;
+  padding: 0 0.8rem;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+}
+
+.control.select select:focus {
+  border-color: #4dd0e1;
+}
+
+.control.select::after {
+  content: '▼';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3rem;
+  height: 3rem;
+  background: #fff;
+  color: #000;
+  font-size: 1.4rem;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+}
+
 input:invalid {
   border-color: #d03030;
   box-shadow: 0 0 0.4rem rgba(208, 48, 48, 0.4);
@@ -89,32 +135,6 @@ input:invalid {
   background: #ddd;
 }
 
-#ffmpeg-extra {
-  display: block;
-  width: 100%;
-  height: 100%;
-  resize: none;
-  background: #222;
-  border: 1px solid #444;
-  color: #fff;
-  font-family: inherit;
-  font-size: 1.3rem;
-  padding: 0.6rem 0.8rem;
-  outline: none;
-  line-height: 1.6;
-  box-sizing: border-box;
-}
-
-#ffmpeg-extra:focus {
-  border-color: #4dd0e1;
-  box-shadow: 0 0 0.4rem rgba(0, 210, 255, 0.4);
-}
-
-#ffmpeg-extra:invalid {
-  border-color: #d03030;
-  box-shadow: 0 0 0.4rem rgba(208, 48, 48, 0.4);
-}
-
 #actions {
   display: flex;
   gap: 1px;
@@ -122,36 +142,6 @@ input:invalid {
   border-top: 1px solid #333;
 }
 
-#cancel-btn,
-#render-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  height: 4.8rem;
-  background: #111;
-  border: none;
-  color: #fff;
-  font-family: inherit;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-#cancel-btn:hover,
-#render-btn:hover {
-  background: #222;
-}
-
 .action-icon {
-  display: inline-flex;
-  width: 2rem;
-  height: 2rem;
   color: #d03030;
-}
-
-.action-icon svg {
-  width: 100%;
-  height: 100%;
 }

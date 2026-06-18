@@ -1,3 +1,55 @@
+import Button from '../../components/button.js';
+
+let keyboardNav = false;
+let shiftNav = false;
+document.addEventListener('keydown', (e) => { keyboardNav = true; shiftNav = e.shiftKey; });
+document.addEventListener('mousedown', () => { keyboardNav = false; });
+
+const FOCUSABLE = 'input, select, textarea, button, [tabindex]';
+
+function firstFocusable(root) {
+  for (const child of root.children) {
+    if (child.tagName === 'DETAILS') {
+      child.open = true;
+      const found = firstFocusable(child);
+      if (found) return found;
+    } else if (child.matches(FOCUSABLE)) {
+      return child;
+    } else {
+      const found = firstFocusable(child);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function lastFocusable(root) {
+  for (const child of [...root.children].reverse()) {
+    if (child.tagName === 'DETAILS') {
+      child.open = true;
+      const found = lastFocusable(child);
+      if (found) return found;
+    } else if (child.matches(FOCUSABLE)) {
+      return child;
+    } else {
+      const found = lastFocusable(child);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function previousFocusable(details) {
+  let sib = details.previousElementSibling;
+  while (sib) {
+    if (sib.tagName === 'DETAILS') sib.open = true;
+    const last = lastFocusable(sib);
+    if (last) return last;
+    sib = sib.previousElementSibling;
+  }
+  return null;
+}
+
 function emit(elem, value) {
   elem.dispatchEvent(new CustomEvent('change', { detail: value }));
 }
@@ -59,48 +111,99 @@ function TextControl(field) {
 }
 
 function ColorControl(field) {
+  const hasAlpha = field.transparency === true;
   const container = document.createElement('div');
-  container.className = 'control color';
+  container.className = 'control color' + (hasAlpha ? ' has-alpha' : '');
 
   const initial = field.value ?? '#000000';
-  container.style.setProperty('--color', initial);
+  const initHex = initial.slice(0, 7);
+  const initAlpha = hasAlpha && initial.length === 9 ? parseInt(initial.slice(7, 9), 16) : 255;
+  const initFull = hasAlpha ? initHex + initAlpha.toString(16).padStart(2, '0') : initHex;
+
+  container.style.setProperty('--color', initFull);
+  if (hasAlpha) container.style.setProperty('--color-rgb', initHex);
+
+  const row = document.createElement('div');
+  row.className = 'color-row';
 
   const text = document.createElement('input');
   text.type = 'text';
-  text.value = initial;
+  text.value = initFull;
 
   const picker = document.createElement('input');
   picker.type = 'color';
-  picker.value = initial;
+  picker.value = initHex;
   picker.tabIndex = -1;
 
-  picker.addEventListener('input', () => {
-    text.value = picker.value;
-    container.style.setProperty('--color', picker.value);
-  });
+  let alpha = null;
+  if (hasAlpha) {
+    alpha = document.createElement('input');
+    alpha.type = 'range';
+    alpha.min = 0;
+    alpha.max = 255;
+    alpha.value = initAlpha;
+  }
+
+  function buildValue() {
+    if (!hasAlpha) return picker.value;
+    return picker.value + parseInt(alpha.value).toString(16).padStart(2, '0');
+  }
+
+  function syncDisplay() {
+    const val = buildValue();
+    container.style.setProperty('--color', val);
+    if (hasAlpha) container.style.setProperty('--color-rgb', picker.value);
+    text.value = val;
+  }
+
+  picker.addEventListener('input', syncDisplay);
   picker.addEventListener('change', (evt) => {
     evt.stopPropagation();
-    emit(container, picker.value);
+    emit(container, buildValue());
   });
 
   text.addEventListener('change', (evt) => {
     evt.stopPropagation();
-    if (/^#[0-9a-f]{6}$/i.test(text.value)) {
-      picker.value = text.value;
-      container.style.setProperty('--color', text.value);
-      emit(container, text.value);
+    const v = text.value.trim();
+    const pattern = hasAlpha ? /^#[0-9a-f]{8}$/i : /^#[0-9a-f]{6}$/i;
+    if (pattern.test(v)) {
+      picker.value = v.slice(0, 7);
+      if (hasAlpha) alpha.value = parseInt(v.slice(7, 9), 16);
+      container.style.setProperty('--color', v);
+      if (hasAlpha) container.style.setProperty('--color-rgb', picker.value);
+      emit(container, buildValue());
     }
   });
 
-  container.appendChild(text);
-  container.appendChild(picker);
+  if (alpha) {
+    alpha.addEventListener('input', syncDisplay);
+    alpha.addEventListener('change', (evt) => {
+      evt.stopPropagation();
+      emit(container, buildValue());
+    });
+  }
 
-  container.getValue = () => picker.value;
+  row.appendChild(text);
+  row.appendChild(picker);
+  container.appendChild(row);
+  if (alpha) container.appendChild(alpha);
+
+  container.getValue = () => buildValue();
   container.setValue = (v) => {
-    picker.value = v;
-    text.value = v;
-    container.style.setProperty('--color', v);
-    emit(container, v);
+    const hex = v.slice(0, 7);
+    picker.value = hex;
+    if (hasAlpha) {
+      const a = v.length === 9 ? parseInt(v.slice(7, 9), 16) : 255;
+      alpha.value = a;
+      const full = hex + a.toString(16).padStart(2, '0');
+      container.style.setProperty('--color', full);
+      container.style.setProperty('--color-rgb', hex);
+      text.value = full;
+    } else {
+      container.style.setProperty('--color', hex);
+      text.value = hex;
+    }
+    emit(container, buildValue());
   };
 
   return container;
@@ -161,6 +264,7 @@ function FileControl(field) {
 
   const btn = document.createElement('div');
   btn.className = 'file-btn';
+  btn.tabIndex = 0;
   btn.textContent = field.value ? field.value.split('/').pop() : '…';
 
   let currentPath = field.value ?? null;
@@ -246,6 +350,24 @@ function Group(def, register, depth = 0) {
   const summary = document.createElement('summary');
   summary.className = 'group-title';
   summary.textContent = def.title;
+  summary.addEventListener('focus', () => {
+    if (!keyboardNav) return;
+    if (shiftNav) {
+      const prev = previousFocusable(details);
+      if (prev) prev.focus();
+      return;
+    }
+    details.open = true;
+    const first = firstFocusable(fieldsDiv);
+    if (first) first.focus();
+  });
+  details.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    details.open = true;
+    for (const sib of details.parentElement.children) {
+      if (sib !== details && sib.tagName === 'DETAILS') sib.open = false;
+    }
+  });
   details.appendChild(summary);
 
   const fieldsDiv = document.createElement('div');
@@ -416,6 +538,8 @@ function ParamsPanel(elem) {
 
 const panel = ParamsPanel(document.querySelector('#settings'));
 const renderBtn = document.querySelector('[data-action="render"]');
+
+document.querySelectorAll('.action-btn').forEach(Button);
 
 panel.build(window.api.definitions ?? { groups: [], fields: [] });
 

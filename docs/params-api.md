@@ -87,6 +87,16 @@ Color picker with a hex text field. Value is a `#rrggbb` hex string.
 params('tint', '#ff6600', { type: 'color' });
 ```
 
+Set `transparency: true` to enable an alpha channel. The value becomes a `#rrggbbaa` hex string and the widget gains an alpha slider with a checkerboard swatch.
+
+```js
+params('bg', '#000000ff', { type: 'color', transparency: true });
+```
+
+| Opt            | Description                                         |
+| -------------- | --------------------------------------------------- |
+| `transparency` | `true` to enable alpha channel (default: `false`)   |
+
 ### `'checkbox'`
 
 Boolean toggle.

@@ -1,0 +1,73 @@
+.ffmpeg-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ffmpeg-header:hover .ffmpeg-chevron {
+  color: #aaa;
+}
+
+.ffmpeg-chevron {
+  color: #666;
+  font-size: 1rem;
+  transition: transform 0.15s ease;
+  transform: rotate(-90deg);
+}
+
+#ffmpeg-field.expanded .ffmpeg-chevron {
+  transform: rotate(0deg);
+}
+
+#ffmpeg-args {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #222;
+  border: 1px solid #444;
+  box-sizing: border-box;
+}
+
+#ffmpeg-args:focus-within {
+  border-color: #4dd0e1;
+  box-shadow: 0 0 0.4rem rgba(0, 210, 255, 0.4);
+}
+
+.ffmpeg-fixed {
+  color: #555;
+  font-family: inherit;
+  font-size: 1.3rem;
+  line-height: 1.6;
+  white-space: pre;
+  user-select: text;
+  padding: 0 0.8rem;
+}
+
+.ffmpeg-fixed-pre {
+  padding-top: 0.6rem;
+}
+
+.ffmpeg-fixed-suf {
+  padding-bottom: 0.6rem;
+}
+
+#ffmpeg-extra {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.3rem;
+  padding: 0 0.8rem;
+  outline: none;
+  line-height: 1.6;
+  box-sizing: border-box;
+}

@@ -132,13 +132,25 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 
 ### ffmpeg (render mode)
 
-Default encoding flags: `-c:v libx264 -pix_fmt yuv420p`. These can be overridden via `MP5_FFMPEG_EXTRA` or the render config window.
+The render config window has a **format** dropdown that controls the output codec:
+
+| Format   | Codec flags                                    | Alpha |
+| -------- | ---------------------------------------------- | ----- |
+| `mp4`    | `-c:v libx264 -pix_fmt yuv420p`                | no    |
+| `mov`    | `-c:v prores_ks -pix_fmt yuva444p10le`         | yes   |
+| `webm`   | `-c:v libvpx-vp9 -pix_fmt yuva420p`            | yes   |
+
+Default format is `mov`. The codec flags are exposed in the **ffmpeg extra args** textarea and can be edited freely. `MP5_FFMPEG_EXTRA` or a custom value in the textarea overrides the preset entirely.
+
+#### Transparent video output
+
+The window background is `#000000` (opaque black). For alpha-channel output (`mov` / `webm`), sketches must call `p.clear()` at the start of `draw()` instead of `p.background()` to produce transparent pixels — `p.background()` does not clear the canvas, so a transparent fill has no effect.
 
 ### Environment variables
 
-| Variable           | Description                                                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `MP5_FFMPEG_EXTRA` | Replaces the default `-c:v libx264 -pix_fmt yuv420p` encoding flags. `-vf scale` from `-g` is always applied regardless. |
+| Variable           | Description                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| `MP5_FFMPEG_EXTRA` | Replaces the format-preset codec flags. `-vf scale` from `-g` is always applied regardless. |
 
 ### Examples
 

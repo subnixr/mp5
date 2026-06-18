@@ -94,7 +94,7 @@ function setupFrameCapture(
       if (totalFrames != null) {
         ffArgs.push('-frames:v', String(totalFrames));
       }
-      ffArgs.push('-vf', `scale=${args.width}:${args.height}`);
+      ffArgs.push('-vf', `scale=${args.width}:${args.height},format=yuva420p`);
       const extraStr = args.ffmpegExtra ?? process.env.MP5_FFMPEG_EXTRA ?? null;
       const extra = extraStr
         ? extraStr.trim().split(/\s+/).filter(Boolean)
@@ -109,7 +109,7 @@ function setupFrameCapture(
       );
 
       ffmpegProcess = spawn('ffmpeg', ffArgs);
-      ffmpegProcess.stderr.resume();
+      ffmpegProcess.stderr.on('data', (chunk) => process.stderr.write(chunk));
       ffmpegProcess.stdin.on('error', (err) => {
         if (err.code !== 'EPIPE') throw err;
       });
