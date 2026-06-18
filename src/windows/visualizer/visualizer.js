@@ -110,6 +110,9 @@ async function switchSketch(index) {
   const newSketch = await importSketch(newPath);
   await engine.loadSketch(newSketch ?? eq, { clearParams: true });
 
+  const hint = engine.getCanvasHint();
+  if (hint) window.api.resizeWindow(Math.round(hint.w * 0.5), Math.round(hint.h * 0.5));
+
   sketchPath = newPath;
   window.api.setWatchSketch(newPath);
   controls.setSketchPath(newPath);
@@ -121,6 +124,7 @@ async function switchSketch(index) {
     mode: engine.getMode(),
     galleryDir: window.args.galleryDir,
     galleryPaths: window.args.galleryPaths,
+    canvasHint: engine.getCanvasHint(),
   });
   pushGalleryState();
 
@@ -176,10 +180,15 @@ async function main() {
       window.args.sketchDisplayName ??
       sketchPath.split('/').pop().replace(/\.js$/, ''))
     : null;
+
+  const initialHint = engine.getCanvasHint();
+  if (initialHint) window.api.resizeWindow(Math.round(initialHint.w * 0.5), Math.round(initialHint.h * 0.5));
+
   window.api.pushSettingsDefs({
     ...engine.getParamsDefinitions(),
     sketchName,
     mode: engine.getMode(),
+    canvasHint: engine.getCanvasHint(),
   });
 
   // -> mic mode
@@ -218,6 +227,7 @@ async function main() {
       ...engine.getParamsDefinitions(),
       sketchName,
       mode: engine.getMode(),
+      canvasHint: engine.getCanvasHint(),
     });
   }
 
@@ -255,7 +265,17 @@ async function main() {
     sketchName = evt.detail.displayName;
     window.__sketchPath = sketchPath;
     const newSketch = await importSketch(sketchPath);
-    if (newSketch) await engine.loadSketch(newSketch);
+    if (newSketch) {
+      await engine.loadSketch(newSketch);
+      const pickHint = engine.getCanvasHint();
+      if (pickHint) window.api.resizeWindow(Math.round(pickHint.w * 0.5), Math.round(pickHint.h * 0.5));
+      window.api.pushSettingsDefs({
+        ...engine.getParamsDefinitions(),
+        sketchName,
+        mode: engine.getMode(),
+        canvasHint: engine.getCanvasHint(),
+      });
+    }
   });
 
   window.addEventListener('keydown', (e) => {
@@ -267,6 +287,7 @@ async function main() {
         galleryDir: window.args.galleryDir ?? null,
         galleryPaths: window.args.galleryPaths ?? null,
         galleryNames: window.args.galleryNames ?? null,
+        canvasHint: engine.getCanvasHint(),
       });
     } else if (gallery && e.code === 'Tab') {
       e.preventDefault();

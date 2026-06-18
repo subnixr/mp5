@@ -83,6 +83,7 @@ export default function Engine(elem) {
   elem.getParams = () => activeParams?.getValues() ?? {};
   elem.getParamsDefinitions = () =>
     activeParams?.getDefinitions() ?? { groups: [], fields: [] };
+  elem.getCanvasHint = () => activeParams?.canvas?.get?.() ?? null;
   elem.setParams = (obj) => activeParams?.queue(obj);
   elem.updateParams = (obj) => activeParams?.queue(obj);
   elem.setInitialParams = (obj) => Object.assign(preservedParams, obj);

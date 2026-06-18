@@ -2,6 +2,32 @@
 
 Params let a sketch declare runtime-tweakable values. When a sketch defines params, the settings window (opened via the controls bar or `F12`) renders the corresponding UI controls. Values are editable in real time, persist across sketch reloads, and can be pre-seeded from the CLI.
 
+## Canvas size hint
+
+```js
+params.canvas(W, H);
+```
+
+Declares the preferred canvas size for the sketch. Call once at the top of the sketch function, before `p.setup`.
+
+- The visualizer window resizes to `W×H` (at 50% scale) when the sketch loads.
+- The render settings width/height fields default to `W` and `H`.
+- Overridden by the `-g WxH` CLI flag or a preset that specifies `rendering.width`/`height` — in those cases the canvas hint has no effect on the settings window.
+- Sketches without a size preference omit the call entirely.
+
+```js
+export default function (p, audio, params) {
+  params.canvas(1920, 1080);
+
+  p.setup = function () {
+    p.createCanvas(p.windowWidth, p.windowHeight);
+  };
+  // ...
+}
+```
+
+---
+
 ## Declaring a parameter
 
 ```js

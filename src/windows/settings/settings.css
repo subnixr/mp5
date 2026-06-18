@@ -68,6 +68,7 @@ body {
   justify-content: center;
   color: var(--color-border);
   letter-spacing: 0.06em;
+  padding-top: 1rem;
 }
 
 /* Rendering panel */

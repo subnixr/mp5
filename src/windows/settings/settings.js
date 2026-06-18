@@ -26,6 +26,10 @@ document.querySelectorAll('.btn').forEach(Button);
 
 panel.build(currentDefs);
 
+if (window.api.definitions.canvasHint) {
+  const { w, h } = window.api.definitions.canvasHint;
+  renderPanel.applyValues({ width: w, height: h });
+}
 if (window.api.definitions.initialRendering) {
   renderPanel.applyValues(window.api.definitions.initialRendering);
 }
@@ -33,6 +37,7 @@ if (window.api.definitions.initialRendering) {
 window.api.onDefinitionsChanged((defs) => {
   currentDefs = defs;
   panel.build(defs);
+  if (defs.canvasHint) renderPanel.applyValues({ width: defs.canvasHint.w, height: defs.canvasHint.h });
 });
 
 document

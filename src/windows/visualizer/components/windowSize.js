@@ -54,7 +54,7 @@ export default function WindowSize(elem) {
     }
 
     label.textContent = currentText();
-    showFor(3000);
+    showFor(1000);
   }
 
   function stopBubble(event) {
@@ -72,11 +72,15 @@ export default function WindowSize(elem) {
   elem.addEventListener('mouseenter', () => {
     hovered = true;
     clearTimeout(hideTimer);
+    if (!('editing' in elem.dataset)) {
+      label.textContent = currentText();
+      elem.dataset.display = '';
+    }
   });
 
   elem.addEventListener('mouseleave', () => {
     hovered = false;
-    if ('display' in elem.dataset) showFor(3000);
+    if ('display' in elem.dataset) showFor(1000);
   });
 
   elem.addEventListener('click', () => {
@@ -86,7 +90,7 @@ export default function WindowSize(elem) {
   window.addEventListener('resize', () => {
     if (!('editing' in elem.dataset)) {
       label.textContent = currentText();
-      showFor(3000);
+      showFor(1000);
     }
   });
 

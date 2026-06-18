@@ -1,23 +1,23 @@
 .window-size {
-  display: none;
-
   position: fixed;
   z-index: 1000;
 
   top: 0;
   right: 0;
 
+  min-width: 3rem;
+  min-height: 3rem;
   padding: 0;
 
-  background: #000;
+  background: transparent;
   color: #fff;
 }
 
 .window-size[data-display] {
-  display: block;
   cursor: pointer;
   max-width: 14rem;
   text-align: center;
+  background: #000;
 }
 
 .window-size .input input {
@@ -29,7 +29,12 @@
 }
 
 .window-size span {
+  display: none;
   padding: 1.6rem;
+}
+
+.window-size[data-display] span {
+  display: inline;
 }
 
 .window-size[data-editing] span {

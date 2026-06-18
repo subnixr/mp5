@@ -28,10 +28,12 @@ export function openSettingsWindow(defs, visWin) {
   relayConsole(win.webContents, 'settings');
 
   let sketchName = defs.sketchName ?? null;
+  const geometryLocked = defs.initialRendering?.width != null;
 
   const onDefsPush = (_e, d) => {
     if (d.sketchName) sketchName = d.sketchName;
-    if (!win.isDestroyed()) win.webContents.send('settings-defs-push', d);
+    const toSend = geometryLocked ? { ...d, canvasHint: null } : d;
+    if (!win.isDestroyed()) win.webContents.send('settings-defs-push', toSend);
   };
 
   const onParamsUpdate = (_e, obj) => {

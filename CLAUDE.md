@@ -25,6 +25,15 @@
 
 sketch path passed to `mp5` can be a `.js` file or a directory (directory is resolved by the engine to locate the sketch entry point).
 
+## `params.canvas(W, H)`
+
+Declare preferred canvas size. Call once at the top of the sketch function, before `p.setup`.
+
+- Visualizer window requests resize to W×H on sketch load (window manager has final say).
+- Render settings W/H fields default to these values.
+- Overridden by `-g WxH` CLI flag or a preset that specifies `rendering.width/height`.
+- Sketches with no size preference (e.g. the built-in `eq.js`) omit the call.
+
 sketches are based on p5 but always rely on the engine api.
 
 time in a sketch is always dependent on the current input of the engine: if input is mic, then is wall-clock/IRL time. if input is file, then time is track's current time.

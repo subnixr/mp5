@@ -52,6 +52,10 @@ export function createParams() {
     return makeParamObj(key);
   }
 
+  let _canvas = null;
+  params.canvas = function (w, h) { _canvas = { w, h }; };
+  params.canvas.get = () => _canvas;
+
   params.group = function (title, obj) {
     const result = { ...obj };
     result[GROUP] = true;

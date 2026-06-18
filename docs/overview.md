@@ -126,7 +126,7 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 | `-S [[HH:]MM:]SS` | Animation window start time (render only; default: 0)       |
 | `-L [[HH:]MM:]SS` | Animation window length (render only; required if no AUDIO) |
 | `-F FPS`          | Render frame rate (default: 60)                             |
-| `-g WxH`          | Output resolution (default: 1920×1080)                      |
+| `-g WxH`          | Output resolution (default: 1920×1080); overrides `params.canvas()` hint |
 | `-p FILE`         | Load initial params from a JSON preset file                 |
 | `-P JSON`         | Pass initial params as an inline JSON string                |
 | `--help`          | Show usage                                                  |
