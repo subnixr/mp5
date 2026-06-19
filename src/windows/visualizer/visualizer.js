@@ -20,6 +20,9 @@ windowSize.addEventListener('resize-request', (evt) => {
 let gallery = null;
 let isSwitching = false;
 let sketchPath = window.args.sketchPath ?? null;
+let galleryDir = window.args.galleryDir ?? null;
+let galleryPaths = window.args.galleryPaths ?? null;
+let galleryNames = window.args.galleryNames ?? null;
 
 async function importSketch(path, bust = false) {
   if (path) {
@@ -37,8 +40,8 @@ function pushGalleryState() {
     enabledPaths: [...gallery.enabledPaths],
     shuffle: gallery.shuffle,
     autoplay: gallery.autoplay,
-    previewDir: window.args.galleryDir + '/.mp5-previews',
-    names: window.args.galleryNames ?? {},
+    previewDir: galleryDir + '/.mp5-previews',
+    names: galleryNames ?? {},
   });
 }
 
@@ -122,8 +125,8 @@ async function switchSketch(index) {
     ...engine.getParamsDefinitions(),
     sketchName,
     mode: engine.getMode(),
-    galleryDir: window.args.galleryDir,
-    galleryPaths: window.args.galleryPaths,
+    galleryDir: galleryDir,
+    galleryPaths: galleryPaths,
     canvasHint: engine.getCanvasHint(),
   });
   pushGalleryState();
@@ -136,7 +139,7 @@ async function switchSketch(index) {
     if (canvas) {
       window.api
         .saveSketchPreview(
-          window.args.galleryDir,
+          galleryDir,
           newPath,
           canvas.toDataURL('image/jpeg', 0.85),
         )
@@ -157,11 +160,11 @@ async function main() {
 
   const { audioPath, initialParams } = window.args;
 
-  if (window.args.galleryPaths?.length) {
+  if (galleryPaths?.length) {
     gallery = {
-      paths: window.args.galleryPaths,
+      paths: galleryPaths,
       currentIndex: 0,
-      enabledPaths: new Set(window.args.galleryPaths),
+      enabledPaths: new Set(galleryPaths),
       shuffle: false,
       autoplay: 0,
       autoplayTimer: null,
@@ -176,7 +179,7 @@ async function main() {
     engine.loadSketch(sketch ?? eq),
   ]);
   let sketchName = sketchPath
-    ? (window.args.galleryNames?.[sketchPath] ??
+    ? (galleryNames?.[sketchPath] ??
       window.args.sketchDisplayName ??
       sketchPath.split('/').pop().replace(/\.js$/, ''))
     : null;
@@ -211,7 +214,7 @@ async function main() {
       if (canvas) {
         window.api
           .saveSketchPreview(
-            window.args.galleryDir,
+            galleryDir,
             sketchPath,
             canvas.toDataURL('image/jpeg', 0.85),
           )
@@ -260,21 +263,75 @@ async function main() {
 
   window.api.onPushGalleryStateRequest(() => pushGalleryState());
 
-  controls.addEventListener('sketch-pick', async (evt) => {
-    sketchPath = evt.detail.path;
-    sketchName = evt.detail.displayName;
+  async function applySketchResult(result) {
+    if (result.galleryDir) {
+      galleryDir = result.galleryDir;
+      galleryPaths = result.galleryPaths;
+      galleryNames = result.galleryNames;
+      gallery = galleryPaths?.length
+        ? {
+            paths: galleryPaths,
+            currentIndex: 0,
+            enabledPaths: new Set(galleryPaths),
+            shuffle: false,
+            autoplay: 0,
+            autoplayTimer: null,
+          }
+        : null;
+      controls.setAttribute('data-gallery-mode', '');
+    } else {
+      galleryDir = null;
+      galleryPaths = null;
+      galleryNames = null;
+      gallery = null;
+      controls.removeAttribute('data-gallery-mode');
+    }
+
+    sketchPath = result.path;
+    sketchName = result.displayName;
     window.__sketchPath = sketchPath;
     const newSketch = await importSketch(sketchPath);
     if (newSketch) {
       await engine.loadSketch(newSketch);
-      const pickHint = engine.getCanvasHint();
-      if (pickHint) window.api.resizeWindow(Math.round(pickHint.w * 0.5), Math.round(pickHint.h * 0.5));
+      const hint = engine.getCanvasHint();
+      if (hint) window.api.resizeWindow(Math.round(hint.w * 0.5), Math.round(hint.h * 0.5));
       window.api.pushSettingsDefs({
         ...engine.getParamsDefinitions(),
         sketchName,
         mode: engine.getMode(),
         canvasHint: engine.getCanvasHint(),
+        ...(galleryDir && { galleryDir, galleryPaths, galleryNames }),
       });
+      if (gallery) pushGalleryState();
+    }
+  }
+
+  controls.addEventListener('sketch-pick', (evt) => applySketchResult(evt.detail));
+
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const filePath = window.api.getPathForFile(file);
+    if (!filePath) return;
+    const result = await window.api.openPath(filePath);
+    if (result.type === 'sketch') {
+      await applySketchResult(result);
+    } else if (result.type === 'audio') {
+      await engine.loadAudio(result.path);
+    } else if (result.type === 'preset') {
+      engine.updateParams(result.params);
+      const r = result.rendering;
+      if (r?.width && r?.height) {
+        window.api.resizeWindow(Math.round(r.width * 0.5), Math.round(r.height * 0.5));
+      } else {
+        const hint = engine.getCanvasHint();
+        if (hint) window.api.resizeWindow(Math.round(hint.w * 0.5), Math.round(hint.h * 0.5));
+      }
+    } else if (result.type === 'error') {
+      errorBar.setMessage(result.message);
+      errorBar.show();
     }
   });
 
@@ -284,9 +341,9 @@ async function main() {
         ...(engine.getParamsDefinitions() ?? { groups: [], fields: [] }),
         sketchName,
         mode: engine.getMode(),
-        galleryDir: window.args.galleryDir ?? null,
-        galleryPaths: window.args.galleryPaths ?? null,
-        galleryNames: window.args.galleryNames ?? null,
+        galleryDir: galleryDir ?? null,
+        galleryPaths: galleryPaths ?? null,
+        galleryNames: galleryNames ?? null,
         canvasHint: engine.getCanvasHint(),
       });
     } else if (gallery && e.code === 'Tab') {

@@ -237,6 +237,11 @@
   display: block;
 }
 
+.controls[data-bar='seek'][data-mode='file'] [data-filename]:hover {
+  color: var(--color-text);
+  cursor: pointer;
+}
+
 /* --- Track length --- */
 
 .controls [data-track-length] {

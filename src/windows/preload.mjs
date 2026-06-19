@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, clipboard } from 'electron';
+import { contextBridge, ipcRenderer, clipboard, webUtils } from 'electron';
 
 const args = JSON.parse(new URLSearchParams(location.search).get('args'));
 
@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld('api', {
   resizeWindow: (w, h) => ipcRenderer.send('resize-window', w, h),
   openAudioPicker: () => ipcRenderer.invoke('open-audio-picker'),
   openSketchPicker: () => ipcRenderer.invoke('open-sketch-picker'),
+  openPath: (p) => ipcRenderer.invoke('open-path', p),
+  getPathForFile: (file) => webUtils.getPathForFile(file),
   openSketchInEditor: (filePath) =>
     ipcRenderer.send('open-sketch-in-editor', filePath),
   notifyReady: () => ipcRenderer.send('renderer-ready'),
@@ -46,6 +48,7 @@ contextBridge.exposeInMainWorld('api', {
       dataURL,
     }),
   openGalleryDir: () => ipcRenderer.send('open-gallery-dir'),
+  showAudioInFolder: () => ipcRenderer.send('show-audio-in-folder'),
   pushGalleryState: (state) => ipcRenderer.send('gallery-state-push', state),
   onGallerySettingsUpdate: (cb) =>
     ipcRenderer.on('gallery-settings-update', cb),

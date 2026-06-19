@@ -37,7 +37,11 @@ if (window.api.definitions.initialRendering) {
 window.api.onDefinitionsChanged((defs) => {
   currentDefs = defs;
   panel.build(defs);
-  if (defs.canvasHint) renderPanel.applyValues({ width: defs.canvasHint.w, height: defs.canvasHint.h });
+  if (defs.canvasHint)
+    renderPanel.applyValues({
+      width: defs.canvasHint.w,
+      height: defs.canvasHint.h,
+    });
 });
 
 document
@@ -67,6 +71,15 @@ document
         })();
       panel.applyValues(sketchParams);
       if (rendering) renderPanel.applyValues(rendering);
+      if (rendering?.width && rendering?.height) {
+        window.api.resizeWindow(
+          Math.round(rendering.width * 0.5),
+          Math.round(rendering.height * 0.5),
+        );
+      } else if (currentDefs.canvasHint) {
+        const { w, h } = currentDefs.canvasHint;
+        window.api.resizeWindow(Math.round(w * 0.5), Math.round(h * 0.5));
+      }
     } catch (e) {
       console.error('loadParams failed:', e);
     }
@@ -102,7 +115,6 @@ document
       output,
     });
   });
-
 
 function RenderingPanel(elem) {
   function makeField(labelText, control) {
@@ -177,7 +189,12 @@ function RenderingPanel(elem) {
   row2.appendChild(makeField('Length', lengthCtrl));
   row2.appendChild(makeField('Format', formatCtrl));
 
-  const group = Input.Group({ title: 'rendering', open: true, noToggle: true, children: [row1, row2, ffmpegDiv] });
+  const group = Input.Group({
+    title: 'rendering',
+    open: true,
+    noToggle: true,
+    children: [row1, row2, ffmpegDiv],
+  });
   elem.appendChild(group);
 
   ffmpegExtra.value = FORMAT_PRESETS[formatSelect.value];
@@ -275,7 +292,7 @@ function ParamsPanel(elem) {
     if (groups.length + fields.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'settings-empty';
-      empty.textContent = 'no settings';
+      empty.textContent = 'no params';
       elem.appendChild(empty);
       return;
     }

@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   definitions,
   updateParam: (key, val) =>
     ipcRenderer.send('settings-update', { [key]: val }),
+  resizeWindow: (w, h) => ipcRenderer.send('resize-window', w, h),
   requestFile: (key) => ipcRenderer.invoke('settings-request-file', key),
   onDefinitionsChanged: (cb) =>
     ipcRenderer.on('settings-defs-push', (_e, defs) => cb(defs)),

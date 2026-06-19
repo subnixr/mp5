@@ -147,7 +147,11 @@ export default function Controls(elem) {
         engine?.seek(evt.detail * engine.getDuration());
       },
     }),
-    filename: elem.querySelector('[data-filename]'),
+    filename: withEvents(elem.querySelector('[data-filename]'), {
+      click: () => {
+        if (engine?.getMode() === 'file') window.api.showAudioInFolder();
+      },
+    }),
     inputSwitch: withEvents(Switch(elem.querySelector('[data-input-switch]')), {
       mic: () => {
         engine?.loadMic();

@@ -17,6 +17,33 @@ function extractZipSketch(zipPath, destDir) {
   return fs.existsSync(entry) ? entry : null;
 }
 
+function scanGalleryDir(dirPath, tmpDir) {
+  const galleryPaths = [];
+  const galleryNames = {};
+  for (const entry of fs.readdirSync(dirPath).sort()) {
+    if (entry.startsWith('.')) continue;
+    const full = path.join(dirPath, entry);
+    const entryStat = fs.statSync(full, { throwIfNoEntry: false });
+    if (entry.endsWith('.zip')) {
+      const name = entry.slice(0, -4);
+      const extractDir = path.join(tmpDir, name);
+      fs.mkdirSync(extractDir, { recursive: true });
+      const entryJs = extractZipSketch(full, extractDir);
+      if (entryJs) {
+        galleryPaths.push(entryJs);
+        galleryNames[entryJs] = name;
+      }
+    } else if (entryStat?.isDirectory()) {
+      const entryJs = path.join(full, 'sketch.js');
+      if (fs.existsSync(entryJs)) {
+        galleryPaths.push(entryJs);
+        galleryNames[entryJs] = entry;
+      }
+    }
+  }
+  return { galleryPaths, galleryNames };
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function watchFileDebounced(filePath, onChanged) {
@@ -50,40 +77,13 @@ function watchFileDebounced(filePath, onChanged) {
 }
 
 export function runVisualizer(args) {
-  let galleryDir = null;
-  let galleryPaths = [];
-  let galleryNames = {};
   if (args.sketchPath) {
     const stat = fs.statSync(args.sketchPath, { throwIfNoEntry: false });
     if (stat?.isDirectory()) {
-      galleryDir = args.sketchPath;
       const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`);
-
-      for (const entry of fs.readdirSync(galleryDir).sort()) {
-        if (entry.startsWith('.')) continue;
-        const full = path.join(galleryDir, entry);
-        const entryStat = fs.statSync(full, { throwIfNoEntry: false });
-
-        if (entry.endsWith('.zip')) {
-          const name = entry.slice(0, -4);
-          const extractDir = path.join(tmpDir, name);
-          fs.mkdirSync(extractDir, { recursive: true });
-          const entryJs = extractZipSketch(full, extractDir);
-          if (entryJs) {
-            galleryPaths.push(entryJs);
-            galleryNames[entryJs] = name;
-          }
-        } else if (entryStat?.isDirectory()) {
-          const entryJs = path.join(full, 'sketch.js');
-          if (fs.existsSync(entryJs)) {
-            galleryPaths.push(entryJs);
-            galleryNames[entryJs] = entry;
-          }
-        }
-      }
-
+      const { galleryPaths, galleryNames } = scanGalleryDir(args.sketchPath, tmpDir);
+      args.galleryDir = args.sketchPath;
       args.sketchPath = galleryPaths[0] ?? null;
-      args.galleryDir = galleryDir;
       args.galleryPaths = galleryPaths;
       args.galleryNames = galleryNames;
     }
@@ -209,10 +209,42 @@ export function runVisualizer(args) {
       displayName = zipName;
       args.sketchSourcePath = picked;
       args.sketchDisplayName = zipName;
+      args.galleryDir = null;
+      args.galleryPaths = null;
+      args.galleryNames = null;
+    } else if (fs.statSync(picked).isDirectory()) {
+      const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`, 'picker');
+      const { galleryPaths, galleryNames } = scanGalleryDir(picked, tmpDir);
+      args.galleryDir = picked;
+      args.galleryPaths = galleryPaths;
+      args.galleryNames = galleryNames;
+      args.sketchPath = galleryPaths[0] ?? null;
+      args.sketchSourcePath = null;
+      args.sketchDisplayName = null;
+
+      watchers.forEach((w) => w.close());
+      watchers.length = 0;
+      if (args.sketchPath) {
+        watchers.push(
+          watchFileDebounced(args.sketchPath, () => {
+            if (!win.isDestroyed()) win.webContents.send('sketch-changed');
+          }),
+        );
+      }
+      return {
+        path: args.sketchPath,
+        displayName: path.basename(picked),
+        galleryDir: picked,
+        galleryPaths,
+        galleryNames,
+      };
     } else {
       displayName = path.basename(picked, '.js');
       args.sketchSourcePath = null;
       args.sketchDisplayName = null;
+      args.galleryDir = null;
+      args.galleryPaths = null;
+      args.galleryNames = null;
     }
 
     args.sketchPath = entryPath;
@@ -227,6 +259,94 @@ export function runVisualizer(args) {
   };
 
   ipcMain.handle('open-sketch-picker', onOpenSketchPicker);
+
+  const onOpenPath = async (_e, droppedPath) => {
+    const stat = fs.statSync(droppedPath, { throwIfNoEntry: false });
+    if (!stat) return { type: 'error', message: `Path not found: ${droppedPath}` };
+
+    if (stat.isDirectory()) {
+      const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`, 'drop');
+      const { galleryPaths, galleryNames } = scanGalleryDir(droppedPath, tmpDir);
+      args.galleryDir = droppedPath;
+      args.galleryPaths = galleryPaths;
+      args.galleryNames = galleryNames;
+      args.sketchPath = galleryPaths[0] ?? null;
+      args.sketchSourcePath = null;
+      args.sketchDisplayName = null;
+      watchers.forEach((w) => w.close());
+      watchers.length = 0;
+      if (args.sketchPath) {
+        watchers.push(
+          watchFileDebounced(args.sketchPath, () => {
+            if (!win.isDestroyed()) win.webContents.send('sketch-changed');
+          }),
+        );
+      }
+      return {
+        type: 'sketch',
+        path: args.sketchPath,
+        displayName: path.basename(droppedPath),
+        galleryDir: droppedPath,
+        galleryPaths,
+        galleryNames,
+      };
+    }
+
+    const ext = path.extname(droppedPath).toLowerCase();
+
+    if (ext === '.js') {
+      args.sketchPath = droppedPath;
+      args.sketchSourcePath = null;
+      args.sketchDisplayName = null;
+      args.galleryDir = null;
+      args.galleryPaths = null;
+      args.galleryNames = null;
+      watchers.forEach((w) => w.close());
+      watchers.length = 0;
+      watchers.push(
+        watchFileDebounced(droppedPath, () => {
+          if (!win.isDestroyed()) win.webContents.send('sketch-changed');
+        }),
+      );
+      return { type: 'sketch', path: droppedPath, displayName: path.basename(droppedPath, '.js') };
+    }
+
+    if (ext === '.zip') {
+      const zipName = path.basename(droppedPath, '.zip');
+      const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`, 'drop');
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const entryPath =
+        extractZipSketch(droppedPath, path.join(tmpDir, zipName)) ?? droppedPath;
+      args.sketchPath = entryPath;
+      args.sketchSourcePath = droppedPath;
+      args.sketchDisplayName = zipName;
+      args.galleryDir = null;
+      args.galleryPaths = null;
+      args.galleryNames = null;
+      watchers.forEach((w) => w.close());
+      watchers.length = 0;
+      watchers.push(
+        watchFileDebounced(entryPath, () => {
+          if (!win.isDestroyed()) win.webContents.send('sketch-changed');
+        }),
+      );
+      return { type: 'sketch', path: entryPath, displayName: zipName };
+    }
+
+    if (ext === '.json') {
+      const content = JSON.parse(fs.readFileSync(droppedPath, 'utf8'));
+      return { type: 'preset', params: content.params ?? content, rendering: content.rendering ?? null };
+    }
+
+    args.audioPath = droppedPath;
+    if (audioWatcher) audioWatcher.close();
+    audioWatcher = watchFileDebounced(droppedPath, () => {
+      if (!win.isDestroyed()) win.webContents.send('audio-changed');
+    });
+    return { type: 'audio', path: droppedPath };
+  };
+
+  ipcMain.handle('open-path', onOpenPath);
 
   const onOpenSketchInEditor = (_e) => {
     const source = args.sketchSourcePath ?? args.sketchPath;
@@ -334,9 +454,15 @@ export function runVisualizer(args) {
 
   ipcMain.handle('save-sketch-preview', onSaveSketchPreview);
 
-  const onOpenGalleryDir = () => shell.openPath(galleryDir ?? args.galleryDir);
+  const onOpenGalleryDir = () => shell.openPath(args.galleryDir);
 
   ipcMain.on('open-gallery-dir', onOpenGalleryDir);
+
+  const onShowAudioInFolder = () => {
+    if (args.audioPath) shell.showItemInFolder(args.audioPath);
+  };
+
+  ipcMain.on('show-audio-in-folder', onShowAudioInFolder);
 
   const onGalleryStatePush = (_e, obj) => {
     galleryWin?.webContents.send('gallery-state-push', obj);
@@ -361,7 +487,9 @@ export function runVisualizer(args) {
     ipcMain.removeHandler('trigger-render');
     ipcMain.off('set-watch-sketch', onSetWatchSketch);
     ipcMain.removeHandler('save-sketch-preview');
+    ipcMain.removeHandler('open-path');
     ipcMain.off('open-gallery-dir', onOpenGalleryDir);
+    ipcMain.off('show-audio-in-folder', onShowAudioInFolder);
     ipcMain.off('gallery-state-push', onGalleryStatePush);
     ipcMain.off('gallery-settings-update', onGallerySettingsUpdate);
     watchers.forEach((w) => w.close());
@@ -369,7 +497,7 @@ export function runVisualizer(args) {
   });
 
   // reload shortcut
-  win.webContents.on('before-input-event', (event, input) => {
+  win.webContents.on('before-input-event', (_event, input) => {
     if (input.type !== 'keyDown') return;
 
     if (input.code === 'KeyR' && input.control) {
