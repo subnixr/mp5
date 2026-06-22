@@ -169,6 +169,60 @@ const motionGroup = params.group('Motion', { spd });
 
 Top-level groups are expanded by default; nested groups are collapsed.
 
+## Repeater
+
+Use `params.repeater(param, itemDefault, opts)` to make a parameter hold a variable-length array. The settings window renders the list with **+** / **−** buttons to add and remove items.
+
+```js
+const colors = params('colors', [], { type: 'color', label: 'Colors' });
+const colorList = params.repeater(colors, '#ffffff', { min: 1, max: 8 });
+```
+
+| Argument      | Description                                                      |
+| ------------- | ---------------------------------------------------------------- |
+| `param`       | A param object returned by `params()`                            |
+| `itemDefault` | Default value for each new item (scalar or object for combos)    |
+| `opts.min`    | Minimum number of items (default: `0`)                           |
+| `opts.max`    | Maximum number of items, or `null` for unlimited (default: `null`) |
+
+Reading repeater values:
+
+```js
+colorList.value;      // full array copy: ['#ffffff', ...]
+colorList.length;     // current item count
+colorList[0].value;   // value of the first item
+colorList[0].onChange(cb); // subscribe to changes on a specific item
+```
+
+## Combo
+
+Use `params.combo(key, label, ...paramObjs)` to display multiple params as a single row in the settings window. Each `paramObj` is a regular `params()` result.
+
+```js
+const stopColor = params('stopColor', '#ffffff', { type: 'color', label: 'Color' });
+const stopPos   = params('stopPos', 0, { type: 'number', min: 0, max: 1, step: 0.01, label: 'Pos' });
+const stop = params.combo('stop', 'Stop', stopColor, stopPos);
+```
+
+Pass a combo to `params.repeater()` to build a list of grouped rows (e.g. gradient stops):
+
+```js
+const stops = params.repeater(stop, { stopColor: '#ffffff', stopPos: 0 }, { min: 2 });
+
+// Reading values:
+stops.value;               // [{ stopColor: '#ffffff', stopPos: 0 }, ...]
+stops[0].value;            // { stopColor: '#ffffff', stopPos: 0 }
+stops[0].stopColor.value;  // '#ffffff'
+```
+
+Combo sub-params are **not** top-level keys in saved preset files. The whole repeater value is stored under the parent key:
+
+```json
+{ "stops": [{ "stopColor": "#ffffff", "stopPos": 0 }, { "stopColor": "#000000", "stopPos": 1 }] }
+```
+
+---
+
 ## Full example
 
 ```js

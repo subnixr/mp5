@@ -90,6 +90,14 @@ document
 document
   .querySelector('[data-action="render"]')
   .addEventListener('click', async () => {
+    const isMic = !currentDefs.audioBase;
+    if (isMic) {
+      const ok = confirm(
+        'Rendering in mic mode: audio data will be zero.\n\nContinue?',
+      );
+      if (!ok) return;
+    }
+
     const rv = renderPanel.getValues();
     const sketchName = currentDefs.sketchName ?? null;
     const audioBase = currentDefs.audioBase ?? null;

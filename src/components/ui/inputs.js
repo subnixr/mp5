@@ -7,8 +7,13 @@ const FOCUSABLE = 'input, select, textarea, button, [tabindex]';
 
 let keyboardNav = false;
 let shiftNav = false;
-document.addEventListener('keydown', (e) => { keyboardNav = true; shiftNav = e.shiftKey; });
-document.addEventListener('mousedown', () => { keyboardNav = false; });
+document.addEventListener('keydown', (e) => {
+  keyboardNav = true;
+  shiftNav = e.shiftKey;
+});
+document.addEventListener('mousedown', () => {
+  keyboardNav = false;
+});
 
 function firstFocusable(root) {
   for (const child of root.children) {
@@ -42,23 +47,69 @@ function lastFocusable(root) {
   return null;
 }
 
-function previousFocusable(details) {
-  let sib = details.previousElementSibling;
-  while (sib) {
-    if (sib.tagName === 'DETAILS') sib.open = true;
-    const last = lastFocusable(sib);
-    if (last) return last;
-    sib = sib.previousElementSibling;
-  }
-  return null;
-}
 
 function emit(elem, value) {
   elem.dispatchEvent(new CustomEvent('change', { detail: value }));
 }
 
-export function Label(elem) {
-  elem.classList.add('label');
+function iconSpan(id) {
+  const span = document.createElement('span');
+  span.className = 'action-icon';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', `#${id}`);
+  svg.appendChild(use);
+  span.appendChild(svg);
+  return span;
+}
+
+export function Label(elem, { collapsible = false, group = false, label, open = true, onExpand } = {}) {
+  if (group) {
+    elem.classList.add('group-title');
+    if (label != null) elem.textContent = label;
+    return elem;
+  }
+
+  if (!collapsible) {
+    elem.classList.add('label');
+    return elem;
+  }
+
+  elem.classList.add('label-header');
+
+  const chevron = document.createElement('span');
+  chevron.className = 'label-chevron';
+
+  const span = document.createElement('span');
+  span.className = 'label';
+  if (label != null) span.textContent = label;
+
+  elem.appendChild(chevron);
+  elem.appendChild(span);
+
+  let target = null;
+  let expanded = open;
+
+  function setExpanded(val) {
+    expanded = val;
+    if (expanded) {
+      elem.dataset.expanded = '';
+    } else {
+      delete elem.dataset.expanded;
+    }
+    if (target) target.style.display = expanded ? '' : 'none';
+    if (expanded && onExpand) onExpand();
+  }
+
+  elem.setTarget = (t) => {
+    target = t;
+    setExpanded(expanded);
+  };
+  elem.setExpanded = setExpanded;
+
+  elem.addEventListener('click', () => setExpanded(!expanded));
+  setExpanded(open);
+
   return elem;
 }
 
@@ -125,8 +176,11 @@ export function Color(field) {
 
   const initial = field.value ?? '#000000';
   const initHex = initial.slice(0, 7);
-  const initAlpha = hasAlpha && initial.length === 9 ? parseInt(initial.slice(7, 9), 16) : 255;
-  const initFull = hasAlpha ? initHex + initAlpha.toString(16).padStart(2, '0') : initHex;
+  const initAlpha =
+    hasAlpha && initial.length === 9 ? parseInt(initial.slice(7, 9), 16) : 255;
+  const initFull = hasAlpha
+    ? initHex + initAlpha.toString(16).padStart(2, '0')
+    : initHex;
 
   container.style.setProperty('--color', initFull);
   if (hasAlpha) container.style.setProperty('--color-rgb', initHex);
@@ -318,6 +372,161 @@ export function Textarea(field) {
   return container;
 }
 
+export function Repeater(def) {
+  const { min = 0, max = null, itemDef = {}, key } = def;
+  let values = Array.isArray(def.value) ? [...def.value] : [];
+  while (values.length < min) values.push(itemDef.value ?? null);
+
+  const container = document.createElement('div');
+  container.className = 'repeater';
+
+  const header = Label(document.createElement('div'), {
+    collapsible: true,
+    label: def.label ?? key,
+    open: false,
+  });
+
+  const body = document.createElement('div');
+  body.className = 'repeater-body';
+
+  header.setTarget(body);
+
+  function syncTabIndex() {
+    header.tabIndex = 'expanded' in header.dataset ? -1 : 0;
+  }
+  new MutationObserver(syncTabIndex).observe(header, { attributes: true, attributeFilter: ['data-expanded'] });
+  syncTabIndex();
+
+  function focusableInBody() {
+    return Array.from(body.querySelectorAll('input, button, select, textarea, [tabindex]:not([tabindex="-1"])'));
+  }
+
+  header.addEventListener('focus', () => {
+    if (!keyboardNav) return;
+    header.setExpanded(true);
+    requestAnimationFrame(() => {
+      const targets = focusableInBody();
+      if (!targets.length) return;
+      (shiftNav ? targets[targets.length - 1] : targets[0]).focus();
+    });
+  });
+
+  function render() {
+    body.replaceChildren();
+
+    values.forEach((v, i) => {
+      const row = document.createElement('div');
+      row.className = 'repeater-row';
+
+      const field = Field(
+        { ...itemDef, label: false, key: `${key}[${i}]`, value: v },
+        (_, val) => {
+          values[i] = val;
+          emit(container, [...values]);
+        },
+      );
+      row.appendChild(field);
+
+      const rmBtn = document.createElement('button');
+      rmBtn.className = 'btn repeater-remove';
+      rmBtn.appendChild(iconSpan('repeater-remove'));
+      if (i >= min) {
+        rmBtn.addEventListener('click', () => {
+          values.splice(i, 1);
+          render();
+          emit(container, [...values]);
+        });
+      } else {
+        rmBtn.disabled = true;
+      }
+      row.appendChild(rmBtn);
+
+      body.appendChild(row);
+    });
+
+    if (max === null || values.length < max) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn repeater-add';
+      addBtn.appendChild(iconSpan('repeater-add'));
+      addBtn.addEventListener('click', () => {
+        values.push(itemDef.value ?? null);
+        render();
+        emit(container, [...values]);
+      });
+      body.appendChild(addBtn);
+    }
+  }
+
+  render();
+
+  container.appendChild(header);
+  container.appendChild(body);
+
+  container.getValue = () => [...values];
+  container.setValue = (v) => {
+    if (!Array.isArray(v)) return;
+    values = [...v];
+    while (values.length < min) values.push(itemDef.value ?? null);
+    render();
+  };
+
+  return container;
+}
+
+export function Combo(def, onSubChange) {
+  const container = document.createElement('div');
+  container.className = 'combo';
+
+  if (def.label !== false) {
+    const labelSpan = Label(document.createElement('span'));
+    labelSpan.textContent = def.label ?? def.key ?? '';
+    container.appendChild(labelSpan);
+  }
+
+  const row = document.createElement('div');
+  row.className = 'combo-row';
+
+  const controls = [];
+  const values = {};
+  const rowValue = (def.value != null && typeof def.value === 'object' && !Array.isArray(def.value))
+    ? def.value
+    : {};
+
+  for (const itemDef of def.items ?? []) {
+    const itemValue = itemDef.key in rowValue ? rowValue[itemDef.key] : itemDef.value;
+    const ctrl = createControl({ ...itemDef, value: itemValue });
+    if (itemDef.flex != null) ctrl.style.flex = itemDef.flex === 'auto' ? '0 1 auto' : String(itemDef.flex);
+    ctrl.style.minWidth = '0';
+    values[itemDef.key] = ctrl.getValue();
+
+    ctrl.addEventListener('change', (evt) => {
+      evt.stopPropagation();
+      values[itemDef.key] = evt.detail;
+      if (onSubChange) onSubChange(itemDef.key, evt.detail);
+      emit(container, { ...values });
+    });
+
+    controls.push({ key: itemDef.key, ctrl });
+    row.appendChild(ctrl);
+  }
+
+  container.appendChild(row);
+
+  container.getValue = () => ({ ...values });
+  container.setValue = (v) => {
+    if (typeof v !== 'object' || v === null) return;
+    for (const { key, ctrl } of controls) {
+      if (key in v) {
+        ctrl.setValue(v[key]);
+        values[key] = v[key];
+      }
+    }
+    emit(container, { ...values });
+  };
+
+  return container;
+}
+
 function createControl(def) {
   if (def.type === 'number') return Number(def);
   if (def.type === 'text') return Text(def);
@@ -326,22 +535,53 @@ function createControl(def) {
   if (def.type === 'select') return Select(def);
   if (def.type === 'file') return File(def);
   if (def.type === 'textarea') return Textarea(def);
+  if (def.type === 'repeater') return Repeater(def);
+  if (def.type === 'combo') return Combo(def);
   return Text(def);
 }
 
 export function Field(def, onChange) {
+  if (def.type === 'repeater') {
+    const ctrl = Repeater(def);
+    if (onChange) {
+      ctrl.addEventListener('change', (evt) => onChange(def.key, evt.detail));
+    }
+    return ctrl;
+  }
+
+  if (def.type === 'combo') {
+    if (def.label === false) {
+      // Row inside a repeater: emit composite value
+      const ctrl = Combo(def);
+      if (onChange) ctrl.addEventListener('change', (evt) => onChange(def.key, evt.detail));
+      return ctrl;
+    }
+    // Standalone combo: emit per sub-key
+    return Combo(def, onChange ? (subKey, val) => onChange(subKey, val) : null);
+  }
+
   const wrapper = document.createElement('label');
   wrapper.className = 'input';
-
-  const span = Label(document.createElement('span'));
-  span.textContent = def.label ?? def.key;
-  wrapper.appendChild(span);
+  wrapper.tabIndex = -1;
 
   const control = createControl(def);
   if (onChange) {
     control.addEventListener('change', (evt) => onChange(def.key, evt.detail));
   }
-  wrapper.appendChild(control);
+
+  if (def.label !== false) {
+    const span = Label(document.createElement('span'));
+    span.textContent = def.label ?? def.key;
+    if (def.type === 'checkbox') {
+      wrapper.appendChild(control);
+      wrapper.appendChild(span);
+    } else {
+      wrapper.appendChild(span);
+      wrapper.appendChild(control);
+    }
+  } else {
+    wrapper.appendChild(control);
+  }
 
   wrapper.getValue = control.getValue;
   wrapper.setValue = control.setValue;
@@ -352,26 +592,28 @@ export function Field(def, onChange) {
 export function Group(def, register = null, depth = 0) {
   const details = document.createElement('details');
   details.className = 'group';
-  details.open = def.open ?? (depth === 0);
+  details.open = def.open ?? depth === 0;
 
-  const summary = document.createElement('summary');
-  summary.className = 'group-title';
-  summary.textContent = def.title;
+  const summary = Label(document.createElement('summary'), { group: true, label: def.title });
   if (def.noToggle) {
     details.dataset.noToggle = '';
     summary.addEventListener('click', (e) => e.preventDefault());
+    summary.tabIndex = -1;
+  }
+
+  function syncSummaryTabIndex() {
+    summary.tabIndex = details.open ? -1 : 0;
+  }
+  if (!def.noToggle) {
+    syncSummaryTabIndex();
+    details.addEventListener('toggle', syncSummaryTabIndex);
   }
 
   summary.addEventListener('focus', () => {
     if (!keyboardNav) return;
-    if (shiftNav) {
-      const prev = previousFocusable(details);
-      if (prev) prev.focus();
-      return;
-    }
     details.open = true;
-    const first = firstFocusable(fieldsDiv);
-    if (first) first.focus();
+    const target = shiftNav ? lastFocusable(fieldsDiv) : firstFocusable(fieldsDiv);
+    if (target) target.focus();
   });
   details.addEventListener('contextmenu', (e) => {
     e.preventDefault();

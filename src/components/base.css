@@ -1,16 +1,16 @@
 :root {
-  --color-bg:      #000;
-  --color-fg:      #fff;
-  --color-select:  #4dd0e1;
-  --color-btn:     #111;
-  --color-field:   #222;
-  --color-active:  #333;
-  --color-border:  #444;
+  --color-bg: #000;
+  --color-fg: #fff;
+  --color-select: #4dd0e1;
+  --color-btn: #111;
+  --color-field: #222;
+  --color-active: #333;
+  --color-border: #444;
   --color-subdued: #555;
-  --color-muted:   #666;
-  --color-dim:     #999;
-  --color-hint:    #aaa;
-  --color-error:   #d03030;
+  --color-muted: #666;
+  --color-dim: #999;
+  --color-hint: #aaa;
+  --color-error: #d03030;
 }
 
 @font-face {
@@ -29,7 +29,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-bg);
+  background: var(--color-btn);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -40,13 +40,17 @@
   background: var(--color-subdued);
 }
 
-::-webkit-scrollbar-button {
+::-webkit-scrollbar-button:single-button {
   background: var(--color-active);
   height: 15px;
 }
 
-::-webkit-scrollbar-button:hover {
+::-webkit-scrollbar-button:single-button:hover {
   background: var(--color-subdued);
+}
+
+::-webkit-scrollbar-button:double-button {
+  display: none;
 }
 
 html {

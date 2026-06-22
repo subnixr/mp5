@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
@@ -22,6 +22,7 @@ export function openRenderProgressWindow({
     closable: false,
     title,
     alwaysOnTop: true,
+    ...(process.platform === 'linux' && { type: 'dialog' }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -57,14 +58,20 @@ export function openRenderProgressWindow({
     app.quit();
   };
 
+  const onOpenOutputFolderIpc = () => {
+    if (output) shell.showItemInFolder(output);
+  };
+
   ipcMain.once('cancel-render', onCancelIpc);
   ipcMain.once('return-to-animation', onReturnToAnimationIpc);
   ipcMain.once('quit-app', onQuitAppIpc);
+  ipcMain.on('open-output-folder', onOpenOutputFolderIpc);
 
   win.on('closed', () => {
     ipcMain.off('cancel-render', onCancelIpc);
     ipcMain.off('return-to-animation', onReturnToAnimationIpc);
     ipcMain.off('quit-app', onQuitAppIpc);
+    ipcMain.off('open-output-folder', onOpenOutputFolderIpc);
   });
 
   const query = {};

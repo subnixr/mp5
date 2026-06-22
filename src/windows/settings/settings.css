@@ -47,6 +47,10 @@ body {
     flex: none;
   }
 
+  #panes-container .settings-container {
+    padding-top: 1rem;
+  }
+
   #rendering-panel {
     order: -1;
   }
@@ -59,7 +63,7 @@ body {
   flex-direction: column;
   gap: 1rem;
   background: var(--color-bg);
-  padding: 0 1rem 1rem;
+  padding: 0.4em 1rem 1rem;
   box-sizing: border-box;
   flex: 1;
   overflow-y: auto;
@@ -147,12 +151,17 @@ body {
 
 /* Params groups */
 
+.settings-container > .group:first-child {
+  margin-top: 0.6em;
+}
+
 .group {
   position: relative;
   border: 1px solid var(--color-border);
   margin-top: 1em;
   padding: 1rem;
   padding-top: 0.6rem;
+  outline: none;
 }
 
 .group:not([open]) {
@@ -162,49 +171,6 @@ body {
   padding-bottom: 0;
 }
 
-.group:focus-within > .group-title {
-  color: var(--color-fg);
-}
-
-.group-title {
-  position: absolute;
-  top: -0.6em;
-  left: 0.5em;
-  background: var(--color-bg);
-  padding: 0 0.4em;
-  color: var(--color-fg);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  user-select: none;
-  list-style: none;
-  white-space: nowrap;
-}
-
-.group-title:focus-visible {
-  outline: none;
-}
-
-.group-title::-webkit-details-marker {
-  display: none;
-}
-
-.group-title::before {
-  content: '▼ ';
-  vertical-align: middle;
-}
-
-.group:not([open]) .group-title::before {
-  content: '▶ ';
-}
-
-.group[data-no-toggle] .group-title {
-  cursor: default;
-}
-
-.group[data-no-toggle] .group-title::before {
-  content: none;
-}
 
 .group-fields {
   display: flex;
@@ -215,8 +181,4 @@ body {
 
 .group-fields .group {
   margin-left: 8px;
-}
-
-.settings-container > .input {
-  padding: 0 1rem;
 }

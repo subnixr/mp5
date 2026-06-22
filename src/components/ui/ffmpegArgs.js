@@ -1,21 +1,9 @@
 import sheet from './ffmpegArgs.css' with { type: 'css' };
 document.adoptedStyleSheets.push(sheet);
 
+import { Label } from './inputs.js';
+
 export default function FfmpegArgs(elem) {
-  const header = document.createElement('div');
-  header.classList.add('ffmpeg-header');
-
-  const label = document.createElement('span');
-  label.classList.add('label');
-  label.textContent = 'ffmpeg args';
-
-  const chevron = document.createElement('span');
-  chevron.classList.add('ffmpeg-chevron');
-  chevron.textContent = '▼';
-
-  header.appendChild(chevron);
-  header.appendChild(label);
-
   const content = document.createElement('div');
   content.id = 'ffmpeg-args';
 
@@ -33,24 +21,6 @@ export default function FfmpegArgs(elem) {
   content.appendChild(textarea);
   content.appendChild(sufDiv);
 
-  elem.style.gap = '0';
-  elem.appendChild(header);
-  elem.appendChild(content);
-
-  let expanded = false;
-
-  function setExpanded(val) {
-    expanded = val;
-    elem.classList.toggle('expanded', expanded);
-    content.style.display = expanded ? '' : 'none';
-    if (expanded) resizeTextarea();
-  }
-
-  header.addEventListener('click', () => setExpanded(!expanded));
-  setExpanded(false);
-
-  elem.textarea = textarea;
-
   function resizeTextarea() {
     textarea.style.height = '0';
     textarea.style.height = textarea.scrollHeight + 'px';
@@ -58,6 +28,19 @@ export default function FfmpegArgs(elem) {
 
   textarea.addEventListener('input', resizeTextarea);
   elem.resizeTextarea = resizeTextarea;
+
+  const header = Label(document.createElement('div'), {
+    collapsible: true,
+    label: 'ffmpeg args',
+    open: false,
+    onExpand: resizeTextarea,
+  });
+  header.setTarget(content);
+
+  elem.appendChild(header);
+  elem.appendChild(content);
+
+  elem.textarea = textarea;
 
   elem.updateFixed = ({ w, h, fps, audio, skip, length, output }) => {
     const pre = [

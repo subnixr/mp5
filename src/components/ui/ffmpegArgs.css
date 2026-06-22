@@ -1,26 +1,3 @@
-.ffmpeg-header {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.ffmpeg-header:hover .ffmpeg-chevron {
-  color: var(--color-hint);
-}
-
-.ffmpeg-chevron {
-  color: var(--color-muted);
-  font-size: 1rem;
-  transition: transform 0.15s ease;
-  transform: rotate(-90deg);
-}
-
-#ffmpeg-field.expanded .ffmpeg-chevron {
-  transform: rotate(0deg);
-}
-
 #ffmpeg-args {
   display: flex;
   flex-direction: column;
