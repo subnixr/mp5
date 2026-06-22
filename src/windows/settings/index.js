@@ -1,10 +1,15 @@
 import { BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function hasBinary(name) {
+  return spawnSync(name, ['--version'], { stdio: 'ignore' }).error?.code !== 'ENOENT';
+}
 
 export function openSettingsWindow(defs, visWin) {
   const win = new BrowserWindow({
@@ -71,6 +76,15 @@ export function openSettingsWindow(defs, visWin) {
   };
 
   const onBrowseOutput = async (_e, defaultName) => {
+    const missing = ['ffmpeg', 'ffprobe'].filter((b) => !hasBinary(b));
+    if (missing.length) {
+      await dialog.showMessageBox(win, {
+        type: 'error',
+        title: 'Missing dependency',
+        message: `${missing.join(' and ')} not found in PATH.\nInstall ffmpeg to use render.`,
+      });
+      return null;
+    }
     const { canceled, filePath } = await dialog.showSaveDialog(win, {
       defaultPath: path.join(process.cwd(), defaultName),
       filters: [{ name: 'Video', extensions: ['mp4', 'mov', 'webm'] }],

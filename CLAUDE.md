@@ -40,6 +40,10 @@ time in a sketch is always dependent on the current input of the engine: if inpu
 
 for file input, time is bound to track current time in order to make animations deterministic. rember that time can be paused, resumed, rewinded or skipped.
 
+**All time-based logic in sketches MUST use `audio.currentTime()` (or `audio.millis()`), never `p.deltaTime`, `p.millis()`, or wall-clock equivalents.** Using p5 time breaks pause/resume/scrub determinism for file inputs.
+
+**Sketch animations must be pure and data-dependent: animation state is computed from `audio.currentTime()` each frame, not accumulated from frame-to-frame deltas.** Avoid one-shot flags, mutable phase state, or anything that makes the visual output depend on playback history. If scrubbing to any point in time and rendering one frame produces the wrong result, the animation is not pure.
+
 # Component Pattern
 
 when building dom UIs, always use the component pattern found in visualizer.js

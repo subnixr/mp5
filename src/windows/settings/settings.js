@@ -134,12 +134,12 @@ function RenderingPanel(elem) {
 
   const skipCtrl = Input.Text({ value: '' });
   const skipInput = skipCtrl.querySelector('input');
-  skipInput.placeholder = '[[HH:]MM:]SS';
+  skipInput.placeholder = '[[HH:]MM:]SS[.mmm]';
   skipInput.spellcheck = false;
 
   const lengthCtrl = Input.Text({ value: '' });
   const lengthInput = lengthCtrl.querySelector('input');
-  lengthInput.placeholder = '[[HH:]MM:]SS';
+  lengthInput.placeholder = '[[HH:]MM:]SS[.mmm]';
   lengthInput.spellcheck = false;
 
   const formatCtrl = Input.Select({

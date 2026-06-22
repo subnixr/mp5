@@ -20,7 +20,7 @@ export function showHelp() {
   console.log(`Usage:
   mp5 [SKETCH] [-f] [-p FILE] [-P JSON]
   mp5 [SKETCH] <AUDIO> [-f] [-l] [-p FILE] [-P JSON]
-  mp5 <SKETCH> [AUDIO] -o <OUTPUT> [-S [[HH:]MM:]SS] [-L [[HH:]MM:]SS] [-F FPS] [-g WxH] [-p FILE] [-P JSON]
+  mp5 <SKETCH> [AUDIO] -o <OUTPUT> [-S [[HH:]MM:]SS[.mmm]] [-L [[HH:]MM:]SS[.mmm]] [-F FPS] [-g WxH] [-p FILE] [-P JSON]
 
 Arguments:
   SKETCH       Path to sketch .js or .zip file, or directory (gallery mode)
@@ -29,8 +29,8 @@ Arguments:
 Options:
   -f               Start in fullscreen (preview mode only)
   -l               Start in loop mode (only available with AUDIO)
-  -S [[HH:]MM:]SS  Animation window start time (render mode only; default: 0)
-  -L [[HH:]MM:]SS  Animation window length (render mode only; required if no AUDIO)
+  -S [[HH:]MM:]SS[.mmm]  Animation window start time (render mode only; default: 0)
+  -L [[HH:]MM:]SS[.mmm]  Animation window length (render mode only; required if no AUDIO)
   -o OUTPUT        Render to OUTPUT file (requires AUDIO or -L)
   -F FPS           Frame rate for render mode (default: ${FRAME_RATE})
   -g WxH           Output resolution (default: ${DEFAULT_WIDTH}x${DEFAULT_HEIGHT})
@@ -136,7 +136,7 @@ export function parseArgs(rawArgv) {
     throw new Error('-S is only valid in render mode (requires -o OUTPUT)');
   }
   if (raw.output && !raw.audio && !raw.length) {
-    throw new Error('render mode without AUDIO requires -L [[HH:]MM:]SS');
+    throw new Error('render mode without AUDIO requires -L [[HH:]MM:]SS[.mmm]');
   }
 
   if (raw.sketch) {
@@ -186,12 +186,12 @@ export function parseArgs(rawArgv) {
   const d = raw.length != null ? parseTimestamp(raw.length) : null;
   if (raw.length != null && d == null)
     throw new Error(
-      `invalid time '${raw.length}' for -L (expected [[HH:]MM:]SS)`,
+      `invalid time '${raw.length}' for -L (expected [[HH:]MM:]SS[.mmm])`,
     );
   const s = raw.start != null ? parseTimestamp(raw.start) : null;
   if (raw.start != null && s == null)
     throw new Error(
-      `invalid time '${raw.start}' for -S (expected [[HH:]MM:]SS)`,
+      `invalid time '${raw.start}' for -S (expected [[HH:]MM:]SS[.mmm])`,
     );
 
   return {
