@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('args', {
   galleryPaths: args.galleryPaths ?? null,
   galleryNames: args.galleryNames ?? null,
   sketchDisplayName: args.sketchDisplayName ?? null,
+  openSettings: args.openSettings ?? false,
 });
 
 contextBridge.exposeInMainWorld('api', {

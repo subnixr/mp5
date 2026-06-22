@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
@@ -15,10 +15,10 @@ export function openRenderProgressWindow({
 }) {
   const win = new BrowserWindow({
     width: 640,
-    height: 180,
+    height: 280,
     minWidth: 640,
-    minHeight: 180,
-    resizable: false,
+    minHeight: 280,
+    resizable: true,
     closable: false,
     title,
     alwaysOnTop: true,
@@ -36,22 +36,35 @@ export function openRenderProgressWindow({
 
   relayConsole(win.webContents, 'progress');
 
+  // win.close() is a no-op because the window is closable: false (blocks the
+  // OS close button mid-render); destroy() bypasses that to close it in code.
+  // The replacement window must open BEFORE we destroy this one, otherwise
+  // window-all-closed fires in between and app.quit() kills the app.
   const onCancelIpc = () => {
-    if (!win.isDestroyed()) win.close();
     onCancel();
+    if (!win.isDestroyed()) win.destroy();
   };
 
   const onReturnToAnimationIpc = () => {
-    if (!win.isDestroyed()) win.close();
     onReturnToAnimation?.();
+    if (!win.isDestroyed()) win.destroy();
+  };
+
+  // destroy first: app.quit() closes windows via close(), which closable: false
+  // blocks, so the quit would otherwise stall.
+  const onQuitAppIpc = () => {
+    if (!win.isDestroyed()) win.destroy();
+    app.quit();
   };
 
   ipcMain.once('cancel-render', onCancelIpc);
   ipcMain.once('return-to-animation', onReturnToAnimationIpc);
+  ipcMain.once('quit-app', onQuitAppIpc);
 
   win.on('closed', () => {
     ipcMain.off('cancel-render', onCancelIpc);
     ipcMain.off('return-to-animation', onReturnToAnimationIpc);
+    ipcMain.off('quit-app', onQuitAppIpc);
   });
 
   const query = {};
@@ -66,7 +79,7 @@ export function openRenderProgressWindow({
       if (!win.isDestroyed()) win.webContents.send('progress', data);
     },
     close: () => {
-      if (!win.isDestroyed()) win.close();
+      if (!win.isDestroyed()) win.destroy();
     },
   };
 }

@@ -4,11 +4,12 @@ import fs from 'fs';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
+import { resolveBinary } from '../../binaries.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function hasBinary(name) {
-  return spawnSync(name, ['--version'], { stdio: 'ignore' }).error?.code !== 'ENOENT';
+  return spawnSync(resolveBinary(name), ['--version'], { stdio: 'ignore' }).error?.code !== 'ENOENT';
 }
 
 export function openSettingsWindow(defs, visWin) {

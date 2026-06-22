@@ -38,7 +38,7 @@ cancelBtn.addEventListener('click', () => {
 });
 
 returnBtn.addEventListener('click', () => window.api.returnToAnimation());
-closeAppBtn.addEventListener('click', () => window.close());
+closeAppBtn.addEventListener('click', () => window.api.quitApp());
 
 window.api.onProgress((data) => {
   if (data.done) {

@@ -81,7 +81,10 @@ export function runVisualizer(args) {
     const stat = fs.statSync(args.sketchPath, { throwIfNoEntry: false });
     if (stat?.isDirectory()) {
       const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`);
-      const { galleryPaths, galleryNames } = scanGalleryDir(args.sketchPath, tmpDir);
+      const { galleryPaths, galleryNames } = scanGalleryDir(
+        args.sketchPath,
+        tmpDir,
+      );
       args.galleryDir = args.sketchPath;
       args.sketchPath = galleryPaths[0] ?? null;
       args.galleryPaths = galleryPaths;
@@ -93,6 +96,8 @@ export function runVisualizer(args) {
     width: 1280,
     height: 720,
     fullscreen: args.fullscreen,
+    fullscreenable: true,
+    resizable: true,
     title: ['mp5', args.sketchPath, args.audioPath]
       .filter((b) => b)
       .join(' - '),
@@ -113,7 +118,9 @@ export function runVisualizer(args) {
   relayConsole(win.webContents, 'window');
 
   // setup fullscreen
-  const onToggleFullscreen = () => win.setFullScreen(!win.isFullScreen());
+  const onToggleFullscreen = () => {
+    win.setFullScreen(!win.isFullScreen());
+  };
 
   win.on('enter-full-screen', () =>
     win.webContents.send('fullscreen-changed', true),
@@ -125,7 +132,8 @@ export function runVisualizer(args) {
   ipcMain.on('toggle-fullscreen', onToggleFullscreen);
 
   const onResizeWindow = (_e, w, h) => {
-    if (!win.isDestroyed()) win.setSize(Math.round(w), Math.round(h));
+    if (win.isDestroyed() || win.isFullScreen()) return;
+    win.setSize(Math.round(w), Math.round(h));
   };
   ipcMain.on('resize-window', onResizeWindow);
 
@@ -139,7 +147,8 @@ export function runVisualizer(args) {
     }
     galleryWin = openGalleryWindow(win);
     galleryWin.webContents.once('did-finish-load', () => {
-      if (!win.isDestroyed()) win.webContents.send('push-gallery-state-request');
+      if (!win.isDestroyed())
+        win.webContents.send('push-gallery-state-request');
     });
     galleryWin.on('closed', () => {
       galleryWin = null;
@@ -156,7 +165,10 @@ export function runVisualizer(args) {
     const audioBase = args.audioPath
       ? path.basename(args.audioPath, path.extname(args.audioPath))
       : null;
-    settingsWin = openSettingsWindow({ ...defs, audioBase, initialRendering: args.initialRendering ?? null }, win);
+    settingsWin = openSettingsWindow(
+      { ...defs, audioBase, initialRendering: args.initialRendering ?? null },
+      win,
+    );
     settingsWin.webContents.once('did-finish-load', () => {
       if (!win.isDestroyed())
         win.webContents.send('push-gallery-state-request');
@@ -262,11 +274,15 @@ export function runVisualizer(args) {
 
   const onOpenPath = async (_e, droppedPath) => {
     const stat = fs.statSync(droppedPath, { throwIfNoEntry: false });
-    if (!stat) return { type: 'error', message: `Path not found: ${droppedPath}` };
+    if (!stat)
+      return { type: 'error', message: `Path not found: ${droppedPath}` };
 
     if (stat.isDirectory()) {
       const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`, 'drop');
-      const { galleryPaths, galleryNames } = scanGalleryDir(droppedPath, tmpDir);
+      const { galleryPaths, galleryNames } = scanGalleryDir(
+        droppedPath,
+        tmpDir,
+      );
       args.galleryDir = droppedPath;
       args.galleryPaths = galleryPaths;
       args.galleryNames = galleryNames;
@@ -308,7 +324,11 @@ export function runVisualizer(args) {
           if (!win.isDestroyed()) win.webContents.send('sketch-changed');
         }),
       );
-      return { type: 'sketch', path: droppedPath, displayName: path.basename(droppedPath, '.js') };
+      return {
+        type: 'sketch',
+        path: droppedPath,
+        displayName: path.basename(droppedPath, '.js'),
+      };
     }
 
     if (ext === '.zip') {
@@ -316,7 +336,8 @@ export function runVisualizer(args) {
       const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`, 'drop');
       fs.mkdirSync(tmpDir, { recursive: true });
       const entryPath =
-        extractZipSketch(droppedPath, path.join(tmpDir, zipName)) ?? droppedPath;
+        extractZipSketch(droppedPath, path.join(tmpDir, zipName)) ??
+        droppedPath;
       args.sketchPath = entryPath;
       args.sketchSourcePath = droppedPath;
       args.sketchDisplayName = zipName;
@@ -335,7 +356,11 @@ export function runVisualizer(args) {
 
     if (ext === '.json') {
       const content = JSON.parse(fs.readFileSync(droppedPath, 'utf8'));
-      return { type: 'preset', params: content.params ?? content, rendering: content.rendering ?? null };
+      return {
+        type: 'preset',
+        params: content.params ?? content,
+        rendering: content.rendering ?? null,
+      };
     }
 
     args.audioPath = droppedPath;
@@ -361,7 +386,9 @@ export function runVisualizer(args) {
       ? path.basename(args.sketchPath, '.js')
       : null;
     const audioBase = args.audioPath ? path.basename(args.audioPath) : null;
-    const titleParts = ['mp5 - renderer', sketchBase, audioBase].filter(Boolean);
+    const titleParts = ['mp5 - renderer', sketchBase, audioBase].filter(
+      Boolean,
+    );
     const title = titleParts.join(' - ');
 
     const renderArgs = {
@@ -389,7 +416,12 @@ export function runVisualizer(args) {
         runVisualizer({ ...args, initialParams: params });
       },
       onReturnToAnimation: () => {
-        runVisualizer({ ...args, initialParams: params });
+        runVisualizer({
+          ...args,
+          initialParams: params,
+          initialRendering: rendering,
+          openSettings: true,
+        });
       },
     });
 

@@ -335,17 +335,24 @@ async function main() {
     }
   });
 
+  function openSettings() {
+    window.api.openSettings({
+      ...(engine.getParamsDefinitions() ?? { groups: [], fields: [] }),
+      sketchName,
+      mode: engine.getMode(),
+      galleryDir: galleryDir ?? null,
+      galleryPaths: galleryPaths ?? null,
+      galleryNames: galleryNames ?? null,
+      canvasHint: engine.getCanvasHint(),
+    });
+  }
+
+  // returning from a render reopens settings so the user lands back where they were
+  if (window.args.openSettings) openSettings();
+
   window.addEventListener('keydown', (e) => {
     if (e.code === 'F12') {
-      window.api.openSettings({
-        ...(engine.getParamsDefinitions() ?? { groups: [], fields: [] }),
-        sketchName,
-        mode: engine.getMode(),
-        galleryDir: galleryDir ?? null,
-        galleryPaths: galleryPaths ?? null,
-        galleryNames: galleryNames ?? null,
-        canvasHint: engine.getCanvasHint(),
-      });
+      openSettings();
     } else if (gallery && e.code === 'Tab') {
       e.preventDefault();
       e.shiftKey ? galleryPrev() : galleryNext();

@@ -8,6 +8,8 @@ const FORMAT_PRESETS = {
   webm: `-c:v libvpx-vp9\n-pix_fmt yuva420p\n-auto-alt-ref 0`,
 };
 
+const MIC_DEFAULT_LENGTH = '10';
+
 function parseTimestamp(str) {
   const parts = str.trim().split(':').map(Number);
   if (parts.length > 3 || parts.some(isNaN)) return null;
@@ -117,6 +119,10 @@ document
   });
 
 function RenderingPanel(elem) {
+  // Mic mode (no audio file) has no track duration to derive render length
+  // from, so default the Length field to 10s the way the CLI requires -L.
+  const isMic = !currentDefs.audioBase;
+
   function makeField(labelText, control) {
     const wrap = document.createElement('label');
     wrap.className = 'input';
@@ -137,7 +143,7 @@ function RenderingPanel(elem) {
   skipInput.placeholder = '[[HH:]MM:]SS[.mmm]';
   skipInput.spellcheck = false;
 
-  const lengthCtrl = Input.Text({ value: '' });
+  const lengthCtrl = Input.Text({ value: isMic ? MIC_DEFAULT_LENGTH : '' });
   const lengthInput = lengthCtrl.querySelector('input');
   lengthInput.placeholder = '[[HH:]MM:]SS[.mmm]';
   lengthInput.spellcheck = false;
@@ -257,7 +263,7 @@ function RenderingPanel(elem) {
     if (obj.height != null) heightCtrl.setValue(obj.height);
     if (obj.fps != null) fpsCtrl.setValue(obj.fps);
     skipCtrl.setValue(obj.skip ?? '');
-    lengthCtrl.setValue(obj.length ?? '');
+    lengthCtrl.setValue(obj.length ?? (isMic ? MIC_DEFAULT_LENGTH : ''));
     if (obj.ffmpegExtraArgs != null) {
       ffmpegExtra.value = obj.ffmpegExtraArgs;
       syncFormatSelect(obj.ffmpegExtraArgs);

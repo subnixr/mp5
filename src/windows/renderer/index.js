@@ -3,6 +3,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
+import { resolveBinary } from '../../binaries.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -119,7 +120,7 @@ function setupFrameCapture(
         args.output,
       );
 
-      ffmpegProcess = spawn('ffmpeg', ffArgs);
+      ffmpegProcess = spawn(resolveBinary('ffmpeg'), ffArgs);
       ffmpegProcess.stderr.on('data', (chunk) => process.stderr.write(chunk));
       ffmpegProcess.stdin.on('error', (err) => {
         if (err.code !== 'EPIPE') throw err;
@@ -192,7 +193,7 @@ function setupFrameCapture(
 
 function getAudioDuration(audioPath) {
   return new Promise((resolve, reject) => {
-    const proc = spawn('ffprobe', [
+    const proc = spawn(resolveBinary('ffprobe'), [
       '-v',
       'error',
       '-show_entries',

@@ -19,13 +19,12 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('force-device-scale-factor', '1');
 
 app.whenReady().then(async () => {
-  session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
-    return permission === 'media' || permission === 'microphone';
-  });
+  const allowed = new Set(['media', 'microphone', 'fullscreen']);
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) =>
+    allowed.has(permission),
+  );
   session.defaultSession.setPermissionRequestHandler(
-    (_wc, permission, callback) => {
-      callback(permission === 'media' || permission === 'microphone');
-    },
+    (_wc, permission, callback) => callback(allowed.has(permission)),
   );
 
   try {
