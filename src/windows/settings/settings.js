@@ -293,17 +293,19 @@ function ParamsPanel(elem) {
   const disabledDeps = new Map(); // disabledKey → [{ elem, check }]
 
   function triggerDisabled(key, value) {
-    for (const { elem: depElem, check } of (disabledDeps.get(key) ?? [])) {
+    for (const { elem: depElem, check } of disabledDeps.get(key) ?? []) {
       depElem.setVisible(!check(value));
     }
   }
 
   function wireDisabled(depElem, def) {
     if (!def.disabledKey) return;
-    const check = def.disabledIs !== undefined
-      ? (v) => v === def.disabledIs
-      : (v) => Boolean(v);
-    if (!disabledDeps.has(def.disabledKey)) disabledDeps.set(def.disabledKey, []);
+    const check =
+      def.disabledIs !== undefined
+        ? (v) => v === def.disabledIs
+        : (v) => Boolean(v);
+    if (!disabledDeps.has(def.disabledKey))
+      disabledDeps.set(def.disabledKey, []);
     disabledDeps.get(def.disabledKey).push({ elem: depElem, check });
   }
 

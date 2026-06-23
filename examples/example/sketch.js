@@ -46,7 +46,9 @@ export default function (p, audio, params) {
   let dtfn = {};
   let fadeIn = 0;
 
-  const animation = params.group('animation', 'Animation',
+  const animation = params.group(
+    'animation',
+    'Animation',
     params('smoothness', 0.95, {
       type: 'number',
       label: 'Smoothness',
@@ -115,7 +117,9 @@ export default function (p, audio, params) {
   });
   params.group('bands', 'Bands', ...bandGroups);
 
-  const fxParams = params.group('fx', 'Effects',
+  const fxParams = params.group(
+    'fx',
+    'Effects',
     ...Object.entries(FX_CFG).map(([k, cfg]) =>
       params(`${k}Threshold`, cfg.threshold ?? 0, {
         type: 'number',
@@ -143,8 +147,7 @@ export default function (p, audio, params) {
       const lo = bandMap[`${k}Lo`].value;
       const hi = bandMap[`${k}Hi`].value;
       transfn[k] = audio.transient(lo, hi, w);
-      if (agcCfg != null)
-        agcfn[k] = audio.agc(0.9, bandMap[`${k}AgcN`].value);
+      if (agcCfg != null) agcfn[k] = audio.agc(0.9, bandMap[`${k}AgcN`].value);
       if (dtCfg != null)
         dtfn[k] = audio.dynamicThreshold(
           bandMap[`${k}AlphaRise`].value,

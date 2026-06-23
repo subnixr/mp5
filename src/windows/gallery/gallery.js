@@ -9,7 +9,9 @@ function SketchCard(filePath, name, enabled, previewDir, previewPath) {
 
   const img = document.createElement('img');
   img.className = 'card-preview';
-  img.src = previewPath ? `file://${previewPath}` : `file://${previewDir}/${name}.jpg`;
+  img.src = previewPath
+    ? `file://${previewPath}`
+    : `file://${previewDir}/${name}.jpg`;
   img.alt = '';
   img.addEventListener('error', () => {
     img.style.display = 'none';
@@ -51,7 +53,14 @@ function GalleryPanel(elem) {
   controls.appendChild(shuffleField);
 
   const autoplayField = Input.Field(
-    { key: 'autoplay', label: 'Autoplay (s)', type: 'number', min: 0, step: 1, value: 0 },
+    {
+      key: 'autoplay',
+      label: 'Autoplay (s)',
+      type: 'number',
+      min: 0,
+      step: 1,
+      value: 0,
+    },
     (_key, v) => window.api.updateGallerySettings({ autoplay: v }),
   );
   controls.appendChild(autoplayField);
@@ -74,8 +83,16 @@ function GalleryPanel(elem) {
     grid.replaceChildren();
     cards = (state.paths ?? []).map((p) => {
       const name = state.names?.[p] ?? p.split('/').pop().replace(/\.js$/, '');
-      const card = SketchCard(p, name, enabledSet.has(p), state.previewDir, state.previews?.[p]);
-      card.querySelector('.card-check').addEventListener('change', emitEnabledPaths);
+      const card = SketchCard(
+        p,
+        name,
+        enabledSet.has(p),
+        state.previewDir,
+        state.previews?.[p],
+      );
+      card
+        .querySelector('.card-check')
+        .addEventListener('change', emitEnabledPaths);
       grid.appendChild(card);
       return card;
     });

@@ -162,7 +162,10 @@ export function parseArgs(rawArgv) {
   if (raw.paramsFile) {
     if (!fs.existsSync(raw.paramsFile))
       throw new Error(`params file not found: ${raw.paramsFile}`);
-    applyPreset(JSON.parse(fs.readFileSync(raw.paramsFile, 'utf8')), raw.paramsFile);
+    applyPreset(
+      JSON.parse(fs.readFileSync(raw.paramsFile, 'utf8')),
+      raw.paramsFile,
+    );
   }
   if (raw.paramsJson) {
     applyPreset(JSON.parse(raw.paramsJson), 'inline JSON');
@@ -208,6 +211,8 @@ export function parseArgs(rawArgv) {
     width: raw.width ?? DEFAULT_WIDTH,
     height: raw.height ?? DEFAULT_HEIGHT,
     initialParams,
-    initialRendering: Object.keys(initialRendering).length ? initialRendering : null,
+    initialRendering: Object.keys(initialRendering).length
+      ? initialRendering
+      : null,
   };
 }

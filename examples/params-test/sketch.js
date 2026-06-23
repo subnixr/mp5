@@ -2,14 +2,43 @@ export default function sketch(p, audio, params) {
   params.canvas(520, 640);
 
   // basic types
-  const num = params('num', 42, { type: 'number', label: 'Number', min: 0, max: 100 });
-  const freq = params('freq', 440, { type: 'number', label: 'Frequency', min: 20, max: 20000, unit: 'Hz' });
-  const gain = params('gain', 0.75, { type: 'number', label: 'Gain', min: 0, max: 1, decimals: 2, unit: 'dB' });
-  const bpm = params('bpm', 120, { type: 'number', label: 'BPM', min: 40, max: 300, step: 0.5, unit: 'bpm' });
+  const num = params('num', 42, {
+    type: 'number',
+    label: 'Number',
+    min: 0,
+    max: 100,
+  });
+  const freq = params('freq', 440, {
+    type: 'number',
+    label: 'Frequency',
+    min: 20,
+    max: 20000,
+    unit: 'Hz',
+  });
+  const gain = params('gain', 0.75, {
+    type: 'number',
+    label: 'Gain',
+    min: 0,
+    max: 1,
+    decimals: 2,
+    unit: 'dB',
+  });
+  const bpm = params('bpm', 120, {
+    type: 'number',
+    label: 'BPM',
+    min: 40,
+    max: 300,
+    step: 0.5,
+    unit: 'bpm',
+  });
   const txt = params('txt', 'hello', { type: 'text', label: 'Text' });
   const col = params('col', '#ff4400', { type: 'color', label: 'Color' });
   const chk = params('chk', true, { type: 'checkbox', label: 'Checkbox' });
-  const sel = params('sel', 'circle', { type: 'select', label: 'Shape', options: ['circle', 'rect', 'triangle'] });
+  const sel = params('sel', 'circle', {
+    type: 'select',
+    label: 'Shape',
+    options: ['circle', 'rect', 'triangle'],
+  });
 
   // image
   const img = params('img', null, { type: 'image', label: 'Image' });
@@ -23,13 +52,17 @@ export default function sketch(p, audio, params) {
   );
 
   // combo (standalone)
-  const origin = params.combo('origin', 'Origin',
+  const origin = params.combo(
+    'origin',
+    'Origin',
     params('ox', 260, { type: 'number', label: 'X', flex: 1 }),
     params('oy', 320, { type: 'number', label: 'Y', flex: 1 }),
   );
 
   // grid
-  const cross = params.grid('cross', 2,
+  const cross = params.grid(
+    'cross',
+    2,
     params('cx', 260, { type: 'number', label: 'X', min: 0, max: 520 }),
     params('cy', 500, { type: 'number', label: 'Y', min: 0, max: 640 }),
     params('carm', 40, { type: 'number', label: 'Arm', min: 5, max: 150 }),
@@ -37,12 +70,28 @@ export default function sketch(p, audio, params) {
   );
 
   // disabled — truthy check: hide sizes repeater when chk is unchecked... actually let's do dedicated controls
-  const showDots = params('showDots', true, { type: 'checkbox', label: 'Show dots' });
-  const dotOpacity = params('dotOpacity', 180, { type: 'number', label: 'Dot opacity', min: 0, max: 255, disabled: { param: showDots, is: false } });
+  const showDots = params('showDots', true, {
+    type: 'checkbox',
+    label: 'Show dots',
+  });
+  const dotOpacity = params('dotOpacity', 180, {
+    type: 'number',
+    label: 'Dot opacity',
+    min: 0,
+    max: 255,
+    disabled: { param: showDots, is: false },
+  });
 
   // disabled on a group — hide cross controls when mode is 'simple'
-  const mode = params('mode', 'full', { type: 'select', label: 'Mode', options: ['simple', 'full'] });
-  params.group('crossGroup', 'Cross', { disabled: { param: mode, is: 'simple' } },
+  const mode = params('mode', 'full', {
+    type: 'select',
+    label: 'Mode',
+    options: ['simple', 'full'],
+  });
+  params.group(
+    'crossGroup',
+    'Cross',
+    { disabled: { param: mode, is: 'simple' } },
     params('gcx', 260, { type: 'number', label: 'X', min: 0, max: 520 }),
     params('gcy', 500, { type: 'number', label: 'Y', min: 0, max: 640 }),
     params('gcarm', 40, { type: 'number', label: 'Arm', min: 5, max: 150 }),
@@ -57,10 +106,17 @@ export default function sketch(p, audio, params) {
       { dx: 300, dy: 300, dr: 35 },
       { dx: 200, dy: 450, dr: 15 },
     ],
-    params.combo('dot', 'Dot',
+    params.combo(
+      'dot',
+      'Dot',
       params('dx', 0, { type: 'number', label: 'X', flex: 1 }),
       params('dy', 0, { type: 'number', label: 'Y', flex: 1 }),
-      params('dr', 12, { type: 'number', label: 'R', flex: 'auto', unit: 'px' }),
+      params('dr', 12, {
+        type: 'number',
+        label: 'R',
+        flex: 'auto',
+        unit: 'px',
+      }),
     ),
     { min: 1 },
   );
@@ -131,11 +187,27 @@ export default function sketch(p, audio, params) {
     p.fill(255);
     p.noStroke();
     p.textSize(13);
-    p.text(`num:${num.value}  freq:${freq.value}  gain:${gain.value}  bpm:${bpm.value}`, 10, 20);
-    p.text(`txt:"${txt.value}"  col:${col.value}  chk:${chk.value}  sel:${sel.value}`, 10, 38);
+    p.text(
+      `num:${num.value}  freq:${freq.value}  gain:${gain.value}  bpm:${bpm.value}`,
+      10,
+      20,
+    );
+    p.text(
+      `txt:"${txt.value}"  col:${col.value}  chk:${chk.value}  sel:${sel.value}`,
+      10,
+      38,
+    );
     p.text(`img:${img.value ?? '(none)'}`, 10, 56);
     p.text(`origin: ${ox}, ${oy}`, 10, 74);
-    p.text(`sizes: [${[...Array(sizes.length)].map((_, i) => sizes[i].value).join(', ')}]`, 10, 92);
-    p.text(`dots: ${dots.length}  cross: ${cross.cx.value},${cross.cy.value} arm:${arm} thk:${thk}`, 10, 110);
+    p.text(
+      `sizes: [${[...Array(sizes.length)].map((_, i) => sizes[i].value).join(', ')}]`,
+      10,
+      92,
+    );
+    p.text(
+      `dots: ${dots.length}  cross: ${cross.cx.value},${cross.cy.value} arm:${arm} thk:${thk}`,
+      10,
+      110,
+    );
   };
 }

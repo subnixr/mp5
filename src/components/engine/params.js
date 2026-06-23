@@ -11,8 +11,13 @@ function resolveDisabled(d, registry) {
   }
   if (!disabledKey) return null;
   const raw = registry.get(disabledKey)?.value ?? false;
-  const disabledValue = disabledIs !== undefined ? raw === disabledIs : Boolean(raw);
-  return { disabledKey, ...(disabledIs !== undefined ? { disabledIs } : {}), disabledValue };
+  const disabledValue =
+    disabledIs !== undefined ? raw === disabledIs : Boolean(raw);
+  return {
+    disabledKey,
+    ...(disabledIs !== undefined ? { disabledIs } : {}),
+    disabledValue,
+  };
 }
 
 export function createParams() {
@@ -31,7 +36,9 @@ export function createParams() {
 
   function makeParamObj(keyRef) {
     return {
-      get _key() { return keyRef.k; },
+      get _key() {
+        return keyRef.k;
+      },
       get value() {
         const entry = registry.get(keyRef.k);
         const v = entry.value;
@@ -48,37 +55,40 @@ export function createParams() {
   }
 
   function makeRepeaterProxy(keyRef) {
-    return new Proxy({}, {
-      get(_, prop) {
-        if (prop === '_key') return keyRef.k;
-        if (prop === 'value') {
-          return [...(registry.get(keyRef.k)?.value ?? [])];
-        }
-        if (prop === 'length') {
-          return registry.get(keyRef.k)?.value?.length ?? 0;
-        }
-        const i = typeof prop === 'string' ? parseInt(prop) : NaN;
-        if (!isNaN(i)) {
-          return {
-            get value() {
-              return registry.get(keyRef.k)?.value?.[i];
-            },
-            onChange(cb) {
-              const entry = registry.get(keyRef.k);
-              const wrapper = (arr) => cb(arr[i]);
-              entry.subscribers.add(wrapper);
-              wrapper(entry.value);
-              return () => entry.subscribers.delete(wrapper);
-            },
-          };
-        }
-        return undefined;
+    return new Proxy(
+      {},
+      {
+        get(_, prop) {
+          if (prop === '_key') return keyRef.k;
+          if (prop === 'value') {
+            return [...(registry.get(keyRef.k)?.value ?? [])];
+          }
+          if (prop === 'length') {
+            return registry.get(keyRef.k)?.value?.length ?? 0;
+          }
+          const i = typeof prop === 'string' ? parseInt(prop) : NaN;
+          if (!isNaN(i)) {
+            return {
+              get value() {
+                return registry.get(keyRef.k)?.value?.[i];
+              },
+              onChange(cb) {
+                const entry = registry.get(keyRef.k);
+                const wrapper = (arr) => cb(arr[i]);
+                entry.subscribers.add(wrapper);
+                wrapper(entry.value);
+                return () => entry.subscribers.delete(wrapper);
+              },
+            };
+          }
+          return undefined;
+        },
       },
-    });
+    );
   }
 
   function applyFlexDefaults(items) {
-    if (items.every(i => i.flex == null)) {
+    if (items.every((i) => i.flex == null)) {
       items.forEach((item, i) => {
         item.flex = i === items.length - 1 ? 1 : 'auto';
       });
@@ -92,11 +102,20 @@ export function createParams() {
     entry.keyRef.k = newKey;
     registry.delete(oldKey);
     registry.set(newKey, entry);
-    const di = defOrder.find(d => d.key === oldKey);
+    const di = defOrder.find((d) => d.key === oldKey);
     if (di) di.key = newKey;
-    if (comboSubKeys.has(oldKey)) { comboSubKeys.delete(oldKey); comboSubKeys.add(newKey); }
-    if (gridSubKeys.has(oldKey)) { gridSubKeys.delete(oldKey); gridSubKeys.add(newKey); }
-    if (repeaterFields.has(oldKey)) { repeaterFields.delete(oldKey); repeaterFields.add(newKey); }
+    if (comboSubKeys.has(oldKey)) {
+      comboSubKeys.delete(oldKey);
+      comboSubKeys.add(newKey);
+    }
+    if (gridSubKeys.has(oldKey)) {
+      gridSubKeys.delete(oldKey);
+      gridSubKeys.add(newKey);
+    }
+    if (repeaterFields.has(oldKey)) {
+      repeaterFields.delete(oldKey);
+      repeaterFields.add(newKey);
+    }
   }
 
   function rekeyChild(child, prefix) {
@@ -107,28 +126,28 @@ export function createParams() {
     if (child._isCombo) {
       const info = combos.get(oldKey);
       if (info) {
-        const newSubKeys = info.subKeys.map(sk => {
+        const newSubKeys = info.subKeys.map((sk) => {
           const nsk = prefix + '.' + sk;
           rekey(sk, nsk);
           return nsk;
         });
         combos.delete(oldKey);
         combos.set(newKey, { ...info, subKeys: newSubKeys });
-        const di = defOrder.find(d => d.key === oldKey && d.kind === 'combo');
+        const di = defOrder.find((d) => d.key === oldKey && d.kind === 'combo');
         if (di) di.key = newKey;
       }
       child._key = newKey;
     } else if (child._isGrid) {
       const info = grids.get(oldKey);
       if (info) {
-        const newSubKeys = info.subKeys.map(sk => {
+        const newSubKeys = info.subKeys.map((sk) => {
           const nsk = prefix + '.' + sk;
           rekey(sk, nsk);
           return nsk;
         });
         grids.delete(oldKey);
         grids.set(newKey, { ...info, subKeys: newSubKeys });
-        const di = defOrder.find(d => d.key === oldKey && d.kind === 'grid');
+        const di = defOrder.find((d) => d.key === oldKey && d.kind === 'grid');
         if (di) di.key = newKey;
       }
       child._key = newKey;
@@ -145,13 +164,22 @@ export function createParams() {
   function buildComboDef(key) {
     const { label, subKeys } = combos.get(key);
     const prefix = key + '.';
-    const items = subKeys.map(sk => {
-      const entry = registry.get(sk);
-      if (!entry) return null;
-      const { type = 'text', flex, label: _ignored, ...rest } = entry.opts;
-      const leafKey = sk.startsWith(prefix) ? sk.slice(prefix.length) : sk;
-      return { key: leafKey, paramKey: sk, type, value: entry.value, flex, ...rest };
-    }).filter(Boolean);
+    const items = subKeys
+      .map((sk) => {
+        const entry = registry.get(sk);
+        if (!entry) return null;
+        const { type = 'text', flex, label: _ignored, ...rest } = entry.opts;
+        const leafKey = sk.startsWith(prefix) ? sk.slice(prefix.length) : sk;
+        return {
+          key: leafKey,
+          paramKey: sk,
+          type,
+          value: entry.value,
+          flex,
+          ...rest,
+        };
+      })
+      .filter(Boolean);
     applyFlexDefaults(items);
     return { key, label, type: 'combo', items };
   }
@@ -159,13 +187,21 @@ export function createParams() {
   function buildGridDef(key) {
     const { columns, subKeys } = grids.get(key);
     const prefix = key + '.';
-    const items = subKeys.map(sk => {
-      const entry = registry.get(sk);
-      if (!entry) return null;
-      const { type = 'text', ...rest } = entry.opts;
-      const leafKey = sk.startsWith(prefix) ? sk.slice(prefix.length) : sk;
-      return { key: leafKey, paramKey: sk, type, value: entry.value, ...rest };
-    }).filter(Boolean);
+    const items = subKeys
+      .map((sk) => {
+        const entry = registry.get(sk);
+        if (!entry) return null;
+        const { type = 'text', ...rest } = entry.opts;
+        const leafKey = sk.startsWith(prefix) ? sk.slice(prefix.length) : sk;
+        return {
+          key: leafKey,
+          paramKey: sk,
+          type,
+          value: entry.value,
+          ...rest,
+        };
+      })
+      .filter(Boolean);
     return { key, type: 'grid', columns, items };
   }
 
@@ -179,15 +215,24 @@ export function createParams() {
     }
 
     if (entry.opts._isRepeater && entry.opts._isGrid) {
-      const { _rMin: min, _rMax: max, columns, subKeys, gridKey, disabled } = entry.opts;
+      const {
+        _rMin: min,
+        _rMax: max,
+        columns,
+        subKeys,
+        gridKey,
+        disabled,
+      } = entry.opts;
       const wrapKey = gridKey ?? key;
-      const items = subKeys.map(sk => {
-        const subEntry = registry.get(sk);
-        if (!subEntry) return null;
-        const { type = 'text', ...rest } = subEntry.opts;
-        const leafKey = sk.slice(wrapKey.length + 1);
-        return { key: leafKey, type, value: subEntry.defaultValue, ...rest };
-      }).filter(Boolean);
+      const items = subKeys
+        .map((sk) => {
+          const subEntry = registry.get(sk);
+          if (!subEntry) return null;
+          const { type = 'text', ...rest } = subEntry.opts;
+          const leafKey = sk.slice(wrapKey.length + 1);
+          return { key: leafKey, type, value: subEntry.defaultValue, ...rest };
+        })
+        .filter(Boolean);
       const elementDefault = {};
       for (const item of items) elementDefault[item.key] = item.value;
       const disabledDef = resolveDisabled(disabled, registry);
@@ -197,22 +242,48 @@ export function createParams() {
         type: 'repeater',
         min,
         max,
-        itemDef: { type: 'grid', label: false, columns, items, value: elementDefault },
+        itemDef: {
+          type: 'grid',
+          label: false,
+          columns,
+          items,
+          value: elementDefault,
+        },
         value: [...entry.value],
         ...(disabledDef ?? {}),
       };
     }
 
     if (entry.opts._isRepeater && entry.opts._isCombo) {
-      const { _rMin: min, _rMax: max, label = key, subKeys, comboKey, disabled } = entry.opts;
+      const {
+        _rMin: min,
+        _rMax: max,
+        label = key,
+        subKeys,
+        comboKey,
+        disabled,
+      } = entry.opts;
       const wrapKey = comboKey ?? key;
-      const items = subKeys.map(sk => {
-        const subEntry = registry.get(sk);
-        if (!subEntry) return null;
-        const { type = 'text', flex, label: _ignored, ...rest } = subEntry.opts;
-        const leafKey = sk.slice(wrapKey.length + 1);
-        return { key: leafKey, type, value: subEntry.defaultValue, flex, ...rest };
-      }).filter(Boolean);
+      const items = subKeys
+        .map((sk) => {
+          const subEntry = registry.get(sk);
+          if (!subEntry) return null;
+          const {
+            type = 'text',
+            flex,
+            label: _ignored,
+            ...rest
+          } = subEntry.opts;
+          const leafKey = sk.slice(wrapKey.length + 1);
+          return {
+            key: leafKey,
+            type,
+            value: subEntry.defaultValue,
+            flex,
+            ...rest,
+          };
+        })
+        .filter(Boolean);
       applyFlexDefaults(items);
       const elementDefault = {};
       for (const item of items) elementDefault[item.key] = item.value;
@@ -230,15 +301,37 @@ export function createParams() {
     }
 
     if (entry.opts._isRepeater) {
-      const { _isRepeater, _rMin: min, _rMax: max, disabled, ...itemOpts } = entry.opts;
+      const {
+        _isRepeater,
+        _rMin: min,
+        _rMax: max,
+        disabled,
+        ...itemOpts
+      } = entry.opts;
       const { type = 'text', label = key, ...rest } = itemOpts;
       const disabledDef = resolveDisabled(disabled, registry);
-      return { key, label, type: 'repeater', min, max, itemDef: { type, label, value: entry.elementDefault, ...rest }, value: [...entry.value], ...(disabledDef ?? {}) };
+      return {
+        key,
+        label,
+        type: 'repeater',
+        min,
+        max,
+        itemDef: { type, label, value: entry.elementDefault, ...rest },
+        value: [...entry.value],
+        ...(disabledDef ?? {}),
+      };
     }
 
     const { type = 'text', label = key, disabled, ...rest } = entry.opts;
     const disabledDef = resolveDisabled(disabled, registry);
-    return { key, label, type, value: entry.value, ...rest, ...(disabledDef ?? {}) };
+    return {
+      key,
+      label,
+      type,
+      value: entry.value,
+      ...rest,
+      ...(disabledDef ?? {}),
+    };
   }
 
   function params(key, defaultValue, opts) {
@@ -278,11 +371,13 @@ export function createParams() {
 
     if (fieldKey !== key) repeaterFields.add(fieldKey);
 
-    if (!defOrder.some(d => d.key === key)) defOrder.push({ kind: 'param', key });
+    if (!defOrder.some((d) => d.key === key))
+      defOrder.push({ kind: 'param', key });
 
     if (field._isGrid) {
       const gridInfo = grids.get(fieldKey);
-      if (!gridInfo) throw new Error(`params.repeater: grid "${fieldKey}" not registered`);
+      if (!gridInfo)
+        throw new Error(`params.repeater: grid "${fieldKey}" not registered`);
 
       const { columns, subKeys } = gridInfo;
       const elementDefault = {};
@@ -292,7 +387,8 @@ export function createParams() {
       }
 
       const initialValue = defaults ? [...defaults] : [];
-      while (initialValue.length < min) initialValue.push({ ...elementDefault });
+      while (initialValue.length < min)
+        initialValue.push({ ...elementDefault });
 
       const existing = registry.get(key);
       const keyRef = existing?.keyRef ?? { k: key };
@@ -301,7 +397,15 @@ export function createParams() {
         value: initialValue,
         defaultValue: [...initialValue],
         elementDefault,
-        opts: { _isGrid: true, _isRepeater: true, _rMin: min, _rMax: max, columns, subKeys, gridKey: fieldKey },
+        opts: {
+          _isGrid: true,
+          _isRepeater: true,
+          _rMin: min,
+          _rMax: max,
+          columns,
+          subKeys,
+          gridKey: fieldKey,
+        },
         subscribers: existing?.subscribers ?? new Set(),
         keyRef,
       });
@@ -311,7 +415,8 @@ export function createParams() {
 
     if (field._isCombo) {
       const comboInfo = combos.get(fieldKey);
-      if (!comboInfo) throw new Error(`params.repeater: combo "${fieldKey}" not registered`);
+      if (!comboInfo)
+        throw new Error(`params.repeater: combo "${fieldKey}" not registered`);
 
       const { subKeys } = comboInfo;
       const elementDefault = {};
@@ -321,7 +426,8 @@ export function createParams() {
       }
 
       const initialValue = defaults ? [...defaults] : [];
-      while (initialValue.length < min) initialValue.push({ ...elementDefault });
+      while (initialValue.length < min)
+        initialValue.push({ ...elementDefault });
 
       const existing = registry.get(key);
       const keyRef = existing?.keyRef ?? { k: key };
@@ -330,7 +436,15 @@ export function createParams() {
         value: initialValue,
         defaultValue: [...initialValue],
         elementDefault,
-        opts: { _isCombo: true, _isRepeater: true, _rMin: min, _rMax: max, label: comboInfo.label, subKeys, comboKey: fieldKey },
+        opts: {
+          _isCombo: true,
+          _isRepeater: true,
+          _rMin: min,
+          _rMax: max,
+          label: comboInfo.label,
+          subKeys,
+          comboKey: fieldKey,
+        },
         subscribers: existing?.subscribers ?? new Set(),
         keyRef,
       });
@@ -339,7 +453,8 @@ export function createParams() {
     }
 
     const entry = registry.get(fieldKey);
-    if (!entry) throw new Error(`params.repeater: key "${fieldKey}" not registered`);
+    if (!entry)
+      throw new Error(`params.repeater: key "${fieldKey}" not registered`);
 
     const elementDefault = entry.defaultValue;
     const initialValue = defaults ? [...defaults] : [];
@@ -362,7 +477,7 @@ export function createParams() {
   params.combo = function (key, label, ...paramObjs) {
     for (const p of paramObjs) rekeyChild(p, key);
     if (!combos.has(key)) defOrder.push({ kind: 'combo', key });
-    combos.set(key, { label, subKeys: paramObjs.map(p => p._key) });
+    combos.set(key, { label, subKeys: paramObjs.map((p) => p._key) });
     for (const p of paramObjs) comboSubKeys.add(p._key);
 
     const result = { _key: key, _isCombo: true };
@@ -376,7 +491,7 @@ export function createParams() {
   params.grid = function (key, columns, ...paramObjs) {
     for (const p of paramObjs) rekeyChild(p, key);
     if (!grids.has(key)) defOrder.push({ kind: 'grid', key });
-    grids.set(key, { columns, subKeys: paramObjs.map(p => p._key) });
+    grids.set(key, { columns, subKeys: paramObjs.map((p) => p._key) });
     for (const p of paramObjs) gridSubKeys.add(p._key);
 
     const result = { _key: key, _isGrid: true };
@@ -388,14 +503,23 @@ export function createParams() {
   };
 
   let _canvas = null;
-  params.canvas = function (w, h) { _canvas = { w, h }; };
+  params.canvas = function (w, h) {
+    _canvas = { w, h };
+  };
   params.canvas.get = () => _canvas;
 
   params.group = function (key, label, ...children) {
     let groupOpts = {};
     if (children.length > 0) {
       const first = children[0];
-      if (first !== null && typeof first === 'object' && !first._key && !first._isCombo && !first._isGrid && !first[GROUP]) {
+      if (
+        first !== null &&
+        typeof first === 'object' &&
+        !first._key &&
+        !first._isCombo &&
+        !first._isGrid &&
+        !first[GROUP]
+      ) {
         groupOpts = first;
         children = children.slice(1);
       }
@@ -561,7 +685,8 @@ export function createParams() {
   params.applyPreserved = function (preserved) {
     for (const [key, pval] of Object.entries(preserved)) {
       if (grids.has(key) && !registry.has(key)) {
-        if (typeof pval !== 'object' || pval === null || Array.isArray(pval)) continue;
+        if (typeof pval !== 'object' || pval === null || Array.isArray(pval))
+          continue;
         const { subKeys } = grids.get(key);
         const prefix = key + '.';
         for (const sk of subKeys) {
@@ -579,7 +704,8 @@ export function createParams() {
       }
 
       if (combos.has(key) && !registry.has(key)) {
-        if (typeof pval !== 'object' || pval === null || Array.isArray(pval)) continue;
+        if (typeof pval !== 'object' || pval === null || Array.isArray(pval))
+          continue;
         const { subKeys } = combos.get(key);
         const prefix = key + '.';
         for (const sk of subKeys) {

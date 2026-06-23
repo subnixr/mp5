@@ -116,7 +116,8 @@ async function switchSketch(index) {
   await engine.loadSketch(newSketch ?? eq, { clearParams: true });
 
   const hint = engine.getCanvasHint();
-  if (hint) window.api.resizeWindow(Math.round(hint.w * 0.5), Math.round(hint.h * 0.5));
+  if (hint)
+    window.api.resizeWindow(Math.round(hint.w * 0.5), Math.round(hint.h * 0.5));
 
   sketchPath = newPath;
   window.api.setWatchSketch(newPath);
@@ -189,7 +190,11 @@ async function main() {
     : null;
 
   const initialHint = engine.getCanvasHint();
-  if (initialHint) window.api.resizeWindow(Math.round(initialHint.w * 0.5), Math.round(initialHint.h * 0.5));
+  if (initialHint)
+    window.api.resizeWindow(
+      Math.round(initialHint.w * 0.5),
+      Math.round(initialHint.h * 0.5),
+    );
 
   window.api.pushSettingsDefs({
     ...engine.getParamsDefinitions(),
@@ -302,19 +307,30 @@ async function main() {
     if (newSketch) {
       await engine.loadSketch(newSketch);
       const hint = engine.getCanvasHint();
-      if (hint) window.api.resizeWindow(Math.round(hint.w * 0.5), Math.round(hint.h * 0.5));
+      if (hint)
+        window.api.resizeWindow(
+          Math.round(hint.w * 0.5),
+          Math.round(hint.h * 0.5),
+        );
       window.api.pushSettingsDefs({
         ...engine.getParamsDefinitions(),
         sketchName,
         mode: engine.getMode(),
         canvasHint: engine.getCanvasHint(),
-        ...(galleryDir && { galleryDir, galleryPaths, galleryNames, galleryPreviews }),
+        ...(galleryDir && {
+          galleryDir,
+          galleryPaths,
+          galleryNames,
+          galleryPreviews,
+        }),
       });
       if (gallery) pushGalleryState();
     }
   }
 
-  controls.addEventListener('sketch-pick', (evt) => applySketchResult(evt.detail));
+  controls.addEventListener('sketch-pick', (evt) =>
+    applySketchResult(evt.detail),
+  );
 
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', async (e) => {
@@ -332,10 +348,17 @@ async function main() {
       engine.updateParams(result.params);
       const r = result.rendering;
       if (r?.width && r?.height) {
-        window.api.resizeWindow(Math.round(r.width * 0.5), Math.round(r.height * 0.5));
+        window.api.resizeWindow(
+          Math.round(r.width * 0.5),
+          Math.round(r.height * 0.5),
+        );
       } else {
         const hint = engine.getCanvasHint();
-        if (hint) window.api.resizeWindow(Math.round(hint.w * 0.5), Math.round(hint.h * 0.5));
+        if (hint)
+          window.api.resizeWindow(
+            Math.round(hint.w * 0.5),
+            Math.round(hint.h * 0.5),
+          );
       }
     } else if (result.type === 'error') {
       errorBar.setMessage(result.message);

@@ -804,7 +804,10 @@ export function Field(def, onChange) {
       elem = ctrl;
     } else {
       // Standalone combo: emit per sub-key
-      elem = Combo(def, onChange ? (subKey, val) => onChange(subKey, val) : null);
+      elem = Combo(
+        def,
+        onChange ? (subKey, val) => onChange(subKey, val) : null,
+      );
     }
   } else if (def.type === 'grid') {
     if (def.label === false) {
@@ -815,7 +818,10 @@ export function Field(def, onChange) {
       elem = ctrl;
     } else {
       // Standalone grid: emit per sub-key
-      elem = Grid(def, onChange ? (subKey, val) => onChange(subKey, val) : null);
+      elem = Grid(
+        def,
+        onChange ? (subKey, val) => onChange(subKey, val) : null,
+      );
     }
   } else {
     const wrapper = document.createElement('label');
@@ -824,7 +830,9 @@ export function Field(def, onChange) {
 
     const control = createControl(def);
     if (onChange) {
-      control.addEventListener('change', (evt) => onChange(def.key, evt.detail));
+      control.addEventListener('change', (evt) =>
+        onChange(def.key, evt.detail),
+      );
     }
 
     if (def.label !== false) {
@@ -846,7 +854,9 @@ export function Field(def, onChange) {
     elem = wrapper;
   }
 
-  elem.setVisible = (v) => { elem.style.display = v ? '' : 'none'; };
+  elem.setVisible = (v) => {
+    elem.style.display = v ? '' : 'none';
+  };
   if (def.disabledValue) elem.style.display = 'none';
 
   return elem;
@@ -907,7 +917,9 @@ export function Group(def, register = null, depth = 0) {
   }
   details.appendChild(fieldsDiv);
 
-  details.setVisible = (v) => { details.style.display = v ? '' : 'none'; };
+  details.setVisible = (v) => {
+    details.style.display = v ? '' : 'none';
+  };
   if (def.disabledValue) details.style.display = 'none';
 
   return details;

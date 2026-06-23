@@ -390,7 +390,6 @@
   white-space: nowrap;
 }
 
-
 .control.has-unit:focus-within .unit-box {
   border-color: var(--color-select);
 }

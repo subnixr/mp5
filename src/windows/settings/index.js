@@ -9,7 +9,10 @@ import { resolveBinary } from '../../binaries.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function hasBinary(name) {
-  return spawnSync(resolveBinary(name), ['--version'], { stdio: 'ignore' }).error?.code !== 'ENOENT';
+  return (
+    spawnSync(resolveBinary(name), ['--version'], { stdio: 'ignore' }).error
+      ?.code !== 'ENOENT'
+  );
 }
 
 export function openSettingsWindow(defs, visWin) {

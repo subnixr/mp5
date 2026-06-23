@@ -17,6 +17,5 @@ contextBridge.exposeInMainWorld('api', {
   browseOutput: (defaultName) =>
     ipcRenderer.invoke('settings-browse-output', defaultName),
   openFile: (filePath) => ipcRenderer.invoke('settings-open-file', filePath),
-  triggerRender: (payload) =>
-    ipcRenderer.invoke('trigger-render', payload),
+  triggerRender: (payload) => ipcRenderer.invoke('trigger-render', payload),
 });

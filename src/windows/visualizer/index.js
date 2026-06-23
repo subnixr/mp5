@@ -240,7 +240,10 @@ export function runVisualizer(args) {
       args.galleryNames = null;
     } else if (fs.statSync(picked).isDirectory()) {
       const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`, 'picker');
-      const { galleryPaths, galleryNames, galleryPreviews } = scanGalleryDir(picked, tmpDir);
+      const { galleryPaths, galleryNames, galleryPreviews } = scanGalleryDir(
+        picked,
+        tmpDir,
+      );
       args.galleryDir = picked;
       args.galleryPaths = galleryPaths;
       args.galleryNames = galleryNames;

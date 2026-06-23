@@ -47,23 +47,23 @@ The controls bar appears at the bottom of the window. It auto-hides after 3 seco
 
 ### Interactions
 
-| Widget                   | Action                                           | Interaction  |
-| ------------------------ | ------------------------------------------------ | ------------ |
-| **MIC / FILE switch**    | Start mic input                                  | Click MIC    |
-|                          | Open audio file picker                           | Click FILE   |
-| **Play / Pause**         | Toggle playback                                  | Click        |
-| **Loop**                 | Toggle loop                                      | Click        |
-| **Seek / frequency bar** | Seek to position (file mode)                     | Click        |
-|                          | Toggle waveform / spectrum view (file mode only) | Right-click  |
-| **Volume slider**        | Set volume                                       | Drag         |
-|                          | Adjust volume (shows volume OSD)                 | Scroll wheel |
-|                          | Toggle mute / unmute (shows volume OSD)          | Right-click  |
-| **Params**               | Open settings window                             | Click        |
-| **Gallery**              | Open gallery window                              | Click        |
-| **Sketch picker**        | Open sketch file picker                          | Click        |
-|                          | Open current sketch in system editor             | Right-click  |
+| Widget                   | Action                                           | Interaction                |
+| ------------------------ | ------------------------------------------------ | -------------------------- |
+| **MIC / FILE switch**    | Start mic input                                  | Click MIC                  |
+|                          | Open audio file picker                           | Click FILE                 |
+| **Play / Pause**         | Toggle playback                                  | Click                      |
+| **Loop**                 | Toggle loop                                      | Click                      |
+| **Seek / frequency bar** | Seek to position (file mode)                     | Click                      |
+|                          | Toggle waveform / spectrum view (file mode only) | Right-click                |
+| **Volume slider**        | Set volume                                       | Drag                       |
+|                          | Adjust volume (shows volume OSD)                 | Scroll wheel               |
+|                          | Toggle mute / unmute (shows volume OSD)          | Right-click                |
+| **Params**               | Open settings window                             | Click                      |
+| **Gallery**              | Open gallery window                              | Click                      |
+| **Sketch picker**        | Open sketch file picker                          | Click                      |
+|                          | Open current sketch in system editor             | Right-click                |
 |                          | Open gallery directory in file manager           | Right-click (gallery mode) |
-| **Fullscreen**           | Toggle fullscreen                                | Click        |
+| **Fullscreen**           | Toggle fullscreen                                | Click                      |
 
 ### Keyboard shortcuts
 
@@ -118,18 +118,18 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 
 ### Options
 
-| Flag              | Description                                                 |
-| ----------------- | ----------------------------------------------------------- |
-| `-f`              | Start fullscreen (preview only)                             |
-| `-l`              | Loop audio (preview only)                                   |
-| `-o OUTPUT`       | Render to output file — activates render mode               |
-| `-S [[HH:]MM:]SS` | Animation window start time (render only; default: 0)       |
-| `-L [[HH:]MM:]SS` | Animation window length (render only; required if no AUDIO) |
-| `-F FPS`          | Render frame rate (default: 60)                             |
+| Flag              | Description                                                              |
+| ----------------- | ------------------------------------------------------------------------ |
+| `-f`              | Start fullscreen (preview only)                                          |
+| `-l`              | Loop audio (preview only)                                                |
+| `-o OUTPUT`       | Render to output file — activates render mode                            |
+| `-S [[HH:]MM:]SS` | Animation window start time (render only; default: 0)                    |
+| `-L [[HH:]MM:]SS` | Animation window length (render only; required if no AUDIO)              |
+| `-F FPS`          | Render frame rate (default: 60)                                          |
 | `-g WxH`          | Output resolution (default: 1920×1080); overrides `params.canvas()` hint |
-| `-p FILE`         | Load initial params from a JSON preset file                 |
-| `-P JSON`         | Pass initial params as an inline JSON string                |
-| `--help`          | Show usage                                                  |
+| `-p FILE`         | Load initial params from a JSON preset file                              |
+| `-P JSON`         | Pass initial params as an inline JSON string                             |
+| `--help`          | Show usage                                                               |
 
 `-p` and `-P` can be combined; inline `-P` values override file `-p` values for the same keys.
 
@@ -137,11 +137,11 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 
 The settings window has a **format** dropdown that controls the output codec:
 
-| Format   | Codec flags                                    | Alpha |
-| -------- | ---------------------------------------------- | ----- |
-| `mp4`    | `-c:v libx264 -pix_fmt yuv420p`                | no    |
-| `mov`    | `-c:v prores_ks -pix_fmt yuva444p10le`         | yes   |
-| `webm`   | `-c:v libvpx-vp9 -pix_fmt yuva420p`            | yes   |
+| Format | Codec flags                            | Alpha |
+| ------ | -------------------------------------- | ----- |
+| `mp4`  | `-c:v libx264 -pix_fmt yuv420p`        | no    |
+| `mov`  | `-c:v prores_ks -pix_fmt yuva444p10le` | yes   |
+| `webm` | `-c:v libvpx-vp9 -pix_fmt yuva420p`    | yes   |
 
 Default format is `mov`. The codec flags are exposed in the **ffmpeg extra args** textarea and can be edited freely. `MP5_FFMPEG_EXTRA` or a custom value in the textarea overrides the preset entirely.
 
@@ -153,15 +153,15 @@ The window background is `#000000` (opaque black). For alpha-channel output (`mo
 
 While rendering, a progress window shows the current frame count and a cancel button. Two checkboxes control what happens when the render finishes:
 
-| Option              | Effect                                                              |
-| ------------------- | ------------------------------------------------------------------- |
-| **Quit on finish**  | The app exits automatically when the render completes               |
+| Option                    | Effect                                                           |
+| ------------------------- | ---------------------------------------------------------------- |
+| **Quit on finish**        | The app exits automatically when the render completes            |
 | **Open folder on finish** | The output folder opens in the system file manager on completion |
 
 ### Environment variables
 
-| Variable           | Description                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| Variable           | Description                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------- |
 | `MP5_FFMPEG_EXTRA` | Replaces the format-preset codec flags. `-vf scale` from `-g` is always applied regardless. |
 
 ### Examples

@@ -10,8 +10,18 @@ const openFolderBtn = Button(document.querySelector('#open-folder-btn'));
 const returnBtn = Button(document.querySelector('#return-btn'));
 const closeAppBtn = Button(document.querySelector('#close-app-btn'));
 
-const quitOnFinish = Field({ type: 'checkbox', key: 'quitOnFinish', label: 'quit on finish', value: false });
-const openFolderOnFinish = Field({ type: 'checkbox', key: 'openFolderOnFinish', label: 'open folder on finish', value: false });
+const quitOnFinish = Field({
+  type: 'checkbox',
+  key: 'quitOnFinish',
+  label: 'Quit on finish',
+  value: false,
+});
+const openFolderOnFinish = Field({
+  type: 'checkbox',
+  key: 'openFolderOnFinish',
+  label: 'Open folder on finish',
+  value: false,
+});
 renderOpts.appendChild(quitOnFinish);
 renderOpts.appendChild(openFolderOnFinish);
 
@@ -59,7 +69,8 @@ window.api.onProgress((data) => {
       window.api.quitApp();
       return;
     }
-    if (data.success && openFolderOnFinish.getValue()) window.api.openOutputFolder();
+    if (data.success && openFolderOnFinish.getValue())
+      window.api.openOutputFolder();
     cancelBtn.style.display = 'none';
     openFolderBtn.style.display = '';
     returnBtn.style.display = '';

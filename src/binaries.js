@@ -14,7 +14,9 @@ const EXTRA_DIRS = [
 ];
 
 function candidateDirs() {
-  const pathDirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
+  const pathDirs = (process.env.PATH ?? '')
+    .split(path.delimiter)
+    .filter(Boolean);
 
   return [...new Set([...pathDirs, ...EXTRA_DIRS])];
 }
