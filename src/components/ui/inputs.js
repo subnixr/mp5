@@ -47,7 +47,6 @@ function lastFocusable(root) {
   return null;
 }
 
-
 function emit(elem, value) {
   elem.dispatchEvent(new CustomEvent('change', { detail: value }));
 }
@@ -63,7 +62,10 @@ function iconSpan(id) {
   return span;
 }
 
-export function Label(elem, { collapsible = false, group = false, label, open = true, onExpand } = {}) {
+export function Label(
+  elem,
+  { collapsible = false, group = false, label, open = true, onExpand } = {},
+) {
   if (group) {
     elem.classList.add('group-title');
     if (label != null) elem.textContent = label;
@@ -84,8 +86,8 @@ export function Label(elem, { collapsible = false, group = false, label, open = 
   span.className = 'label';
   if (label != null) span.textContent = label;
 
-  elem.appendChild(chevron);
   elem.appendChild(span);
+  elem.appendChild(chevron);
 
   let target = null;
   let expanded = open;
@@ -118,29 +120,79 @@ export function Number(field) {
   container.className = 'control';
 
   const decimals = field.decimals ?? null;
+  const step = field.step ?? (decimals != null ? 10 ** -decimals : 1);
+
+  const fmt = (v) =>
+    decimals != null ? globalThis.Number(v).toFixed(decimals) : String(v);
+
+  const clamp = (v) => {
+    if (field.min != null) v = Math.max(field.min, v);
+    if (field.max != null) v = Math.min(field.max, v);
+    return v;
+  };
 
   const input = document.createElement('input');
-  input.type = 'number';
-  if (field.min != null) input.min = field.min;
-  if (field.max != null) input.max = field.max;
-  if (field.step != null) {
-    input.step = field.step;
-  } else if (decimals != null) {
-    input.step = (10 ** -decimals).toFixed(decimals);
-  }
-  input.value =
-    decimals != null
-      ? globalThis.Number(field.value ?? 0).toFixed(decimals)
-      : (field.value ?? '');
+  input.type = 'text';
+  input.inputMode = 'decimal';
+  input.value = fmt(field.value ?? 0);
+
+  let lastValid = input.value;
+
+  input.addEventListener('input', () => {
+    if (/^-?\d*\.?\d*$/.test(input.value)) {
+      lastValid = input.value;
+    } else {
+      input.value = lastValid;
+    }
+  });
+
   input.addEventListener('change', (evt) => {
     evt.stopPropagation();
-    emit(container, globalThis.Number(input.value));
   });
+
+  input.addEventListener('blur', () => {
+    const parsed = parseFloat(input.value);
+    if (!isNaN(parsed)) {
+      const clamped = clamp(parsed);
+      input.value = fmt(clamped);
+      lastValid = input.value;
+      emit(container, clamped);
+    } else {
+      input.value = lastValid;
+    }
+  });
+
   container.appendChild(input);
+
+  if (field.unit != null) {
+    container.classList.add('has-unit');
+    const unitBox = document.createElement('div');
+    unitBox.className = 'unit-box';
+    unitBox.textContent = field.unit;
+
+    const nudge = (delta) => {
+      const v = clamp(globalThis.Number(input.value) + delta);
+      input.value = fmt(v);
+      lastValid = input.value;
+      emit(container, v);
+    };
+
+    unitBox.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      nudge(+step);
+    });
+    unitBox.addEventListener('contextmenu', (evt) => {
+      evt.preventDefault();
+      nudge(-step);
+    });
+
+    container.appendChild(unitBox);
+  }
 
   container.getValue = () => globalThis.Number(input.value);
   container.setValue = (v) => {
-    input.value = decimals != null ? globalThis.Number(v).toFixed(decimals) : v;
+    input.value = fmt(v);
+    lastValid = input.value;
     emit(container, globalThis.Number(v));
   };
 
@@ -327,24 +379,129 @@ export function File(field) {
   const btn = document.createElement('div');
   btn.className = 'file-btn';
   btn.tabIndex = 0;
-  btn.textContent = field.value ? field.value.split('/').pop() : '…';
+
+  const clearBtn = document.createElement('div');
+  clearBtn.className = 'file-clear';
+  clearBtn.tabIndex = 0;
+  clearBtn.appendChild(iconSpan('remove'));
 
   let currentPath = field.value ?? null;
+
+  function update(path) {
+    currentPath = path;
+    btn.textContent = path ? path.split('/').pop() : '';
+    container.classList.toggle('has-value', !!path);
+  }
 
   btn.addEventListener('click', async () => {
     const result = await window.api.requestFile(field.key);
     if (result?.path) {
-      currentPath = result.path;
-      btn.textContent = result.path.split('/').pop();
+      update(result.path);
       emit(container, result.path);
     }
   });
+
+  clearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    update(null);
+    emit(container, null);
+  });
+
+  clearBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      update(null);
+      emit(container, null);
+    }
+  });
+
   container.appendChild(btn);
+  container.appendChild(clearBtn);
+
+  update(currentPath);
 
   container.getValue = () => currentPath;
   container.setValue = (v) => {
-    currentPath = v;
-    btn.textContent = v ? v.split('/').pop() : '…';
+    update(v);
+    emit(container, v);
+  };
+
+  return container;
+}
+
+export function Image(field) {
+  const container = document.createElement('div');
+  container.className = 'control';
+
+  const btn = document.createElement('div');
+  btn.className = 'file-btn';
+  btn.tabIndex = 0;
+
+  const clearBtn = document.createElement('div');
+  clearBtn.className = 'file-clear';
+  clearBtn.tabIndex = 0;
+  clearBtn.appendChild(iconSpan('remove'));
+
+  const previewBtn = document.createElement('div');
+  previewBtn.className = 'image-preview-btn';
+  previewBtn.tabIndex = 0;
+  previewBtn.appendChild(iconSpan('image'));
+
+  let currentPath = field.value ?? null;
+
+  function update(path) {
+    currentPath = path;
+    btn.textContent = path ? path.split('/').pop() : '';
+    container.classList.toggle('has-value', !!path);
+  }
+
+  async function pickFile() {
+    const result = await window.api.requestFile(field.key);
+    if (result?.path) {
+      update(result.path);
+      emit(container, result.path);
+    }
+  }
+
+  btn.addEventListener('click', pickFile);
+
+  clearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    update(null);
+    emit(container, null);
+  });
+
+  clearBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      update(null);
+      emit(container, null);
+    }
+  });
+
+  previewBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentPath) window.api.openFile(currentPath);
+    else pickFile();
+  });
+
+  previewBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (currentPath) window.api.openFile(currentPath);
+      else pickFile();
+    }
+  });
+
+  container.appendChild(btn);
+  container.appendChild(clearBtn);
+  container.appendChild(previewBtn);
+
+  update(currentPath);
+
+  container.getValue = () => currentPath;
+  container.setValue = (v) => {
+    update(v);
     emit(container, v);
   };
 
@@ -383,7 +540,7 @@ export function Repeater(def) {
   const header = Label(document.createElement('div'), {
     collapsible: true,
     label: def.label ?? key,
-    open: false,
+    open: true,
   });
 
   const body = document.createElement('div');
@@ -394,11 +551,18 @@ export function Repeater(def) {
   function syncTabIndex() {
     header.tabIndex = 'expanded' in header.dataset ? -1 : 0;
   }
-  new MutationObserver(syncTabIndex).observe(header, { attributes: true, attributeFilter: ['data-expanded'] });
+  new MutationObserver(syncTabIndex).observe(header, {
+    attributes: true,
+    attributeFilter: ['data-expanded'],
+  });
   syncTabIndex();
 
   function focusableInBody() {
-    return Array.from(body.querySelectorAll('input, button, select, textarea, [tabindex]:not([tabindex="-1"])'));
+    return Array.from(
+      body.querySelectorAll(
+        'input, button, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
   }
 
   header.addEventListener('focus', () => {
@@ -414,9 +578,40 @@ export function Repeater(def) {
   function render() {
     body.replaceChildren();
 
+    let dragIndex = null;
+
     values.forEach((v, i) => {
       const row = document.createElement('div');
       row.className = 'repeater-row';
+
+      const handle = document.createElement('div');
+      handle.className = 'repeater-handle';
+      handle.appendChild(iconSpan('drag'));
+      handle.addEventListener('mousedown', () => {
+        row.draggable = true;
+      });
+      row.addEventListener('dragend', () => {
+        row.draggable = false;
+        dragIndex = null;
+      });
+      row.addEventListener('dragstart', (e) => {
+        dragIndex = i;
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragover', (e) => {
+        if (dragIndex === null || dragIndex === i) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+      row.addEventListener('drop', (e) => {
+        if (dragIndex === null || dragIndex === i) return;
+        e.preventDefault();
+        const [moved] = values.splice(dragIndex, 1);
+        values.splice(i, 0, moved);
+        render();
+        emit(container, [...values]);
+      });
+      row.appendChild(handle);
 
       const field = Field(
         { ...itemDef, label: false, key: `${key}[${i}]`, value: v },
@@ -429,7 +624,7 @@ export function Repeater(def) {
 
       const rmBtn = document.createElement('button');
       rmBtn.className = 'btn repeater-remove';
-      rmBtn.appendChild(iconSpan('repeater-remove'));
+      rmBtn.appendChild(iconSpan('remove'));
       if (i >= min) {
         rmBtn.addEventListener('click', () => {
           values.splice(i, 1);
@@ -447,7 +642,7 @@ export function Repeater(def) {
     if (max === null || values.length < max) {
       const addBtn = document.createElement('button');
       addBtn.className = 'btn repeater-add';
-      addBtn.appendChild(iconSpan('repeater-add'));
+      addBtn.appendChild(iconSpan('insert'));
       addBtn.addEventListener('click', () => {
         values.push(itemDef.value ?? null);
         render();
@@ -488,21 +683,27 @@ export function Combo(def, onSubChange) {
 
   const controls = [];
   const values = {};
-  const rowValue = (def.value != null && typeof def.value === 'object' && !Array.isArray(def.value))
-    ? def.value
-    : {};
+  const rowValue =
+    def.value != null &&
+    typeof def.value === 'object' &&
+    !Array.isArray(def.value)
+      ? def.value
+      : {};
 
   for (const itemDef of def.items ?? []) {
-    const itemValue = itemDef.key in rowValue ? rowValue[itemDef.key] : itemDef.value;
+    const itemValue =
+      itemDef.key in rowValue ? rowValue[itemDef.key] : itemDef.value;
     const ctrl = createControl({ ...itemDef, value: itemValue });
-    if (itemDef.flex != null) ctrl.style.flex = itemDef.flex === 'auto' ? '0 1 auto' : String(itemDef.flex);
+    if (itemDef.flex != null)
+      ctrl.style.flex =
+        itemDef.flex === 'auto' ? '0 1 auto' : String(itemDef.flex);
     ctrl.style.minWidth = '0';
     values[itemDef.key] = ctrl.getValue();
 
     ctrl.addEventListener('change', (evt) => {
       evt.stopPropagation();
       values[itemDef.key] = evt.detail;
-      if (onSubChange) onSubChange(itemDef.key, evt.detail);
+      if (onSubChange) onSubChange(itemDef.paramKey ?? itemDef.key, evt.detail);
       emit(container, { ...values });
     });
 
@@ -527,6 +728,49 @@ export function Combo(def, onSubChange) {
   return container;
 }
 
+export function Grid(def, onSubChange) {
+  const container = document.createElement('div');
+  container.className = 'grid-fields';
+  container.style.setProperty('--grid-cols', String(def.columns ?? 1));
+
+  const controls = [];
+  const values = {};
+  const rowValue =
+    def.value != null &&
+    typeof def.value === 'object' &&
+    !Array.isArray(def.value)
+      ? def.value
+      : {};
+
+  for (const itemDef of def.items ?? []) {
+    const itemValue =
+      itemDef.key in rowValue ? rowValue[itemDef.key] : itemDef.value;
+    const field = Field({ ...itemDef, value: itemValue }, (key, val) => {
+      values[key] = val;
+      if (onSubChange) onSubChange(itemDef.paramKey ?? key, val);
+      emit(container, { ...values });
+    });
+    if (itemDef.span != null) field.style.gridColumn = `span ${itemDef.span}`;
+    values[itemDef.key] = field.getValue();
+    controls.push({ key: itemDef.key, field });
+    container.appendChild(field);
+  }
+
+  container.getValue = () => ({ ...values });
+  container.setValue = (v) => {
+    if (typeof v !== 'object' || v === null) return;
+    for (const { key, field } of controls) {
+      if (key in v) {
+        field.setValue(v[key]);
+        values[key] = v[key];
+      }
+    }
+    emit(container, { ...values });
+  };
+
+  return container;
+}
+
 function createControl(def) {
   if (def.type === 'number') return Number(def);
   if (def.type === 'text') return Text(def);
@@ -534,59 +778,78 @@ function createControl(def) {
   if (def.type === 'checkbox') return Checkbox(def);
   if (def.type === 'select') return Select(def);
   if (def.type === 'file') return File(def);
+  if (def.type === 'image') return Image(def);
   if (def.type === 'textarea') return Textarea(def);
   if (def.type === 'repeater') return Repeater(def);
   if (def.type === 'combo') return Combo(def);
+  if (def.type === 'grid') return Grid(def);
   return Text(def);
 }
 
 export function Field(def, onChange) {
+  let elem;
+
   if (def.type === 'repeater') {
     const ctrl = Repeater(def);
     if (onChange) {
       ctrl.addEventListener('change', (evt) => onChange(def.key, evt.detail));
     }
-    return ctrl;
-  }
-
-  if (def.type === 'combo') {
+    elem = ctrl;
+  } else if (def.type === 'combo') {
     if (def.label === false) {
       // Row inside a repeater: emit composite value
       const ctrl = Combo(def);
-      if (onChange) ctrl.addEventListener('change', (evt) => onChange(def.key, evt.detail));
-      return ctrl;
-    }
-    // Standalone combo: emit per sub-key
-    return Combo(def, onChange ? (subKey, val) => onChange(subKey, val) : null);
-  }
-
-  const wrapper = document.createElement('label');
-  wrapper.className = 'input';
-  wrapper.tabIndex = -1;
-
-  const control = createControl(def);
-  if (onChange) {
-    control.addEventListener('change', (evt) => onChange(def.key, evt.detail));
-  }
-
-  if (def.label !== false) {
-    const span = Label(document.createElement('span'));
-    span.textContent = def.label ?? def.key;
-    if (def.type === 'checkbox') {
-      wrapper.appendChild(control);
-      wrapper.appendChild(span);
+      if (onChange)
+        ctrl.addEventListener('change', (evt) => onChange(def.key, evt.detail));
+      elem = ctrl;
     } else {
-      wrapper.appendChild(span);
-      wrapper.appendChild(control);
+      // Standalone combo: emit per sub-key
+      elem = Combo(def, onChange ? (subKey, val) => onChange(subKey, val) : null);
+    }
+  } else if (def.type === 'grid') {
+    if (def.label === false) {
+      // Grid inside a repeater: emit composite value
+      const ctrl = Grid(def);
+      if (onChange)
+        ctrl.addEventListener('change', (evt) => onChange(def.key, evt.detail));
+      elem = ctrl;
+    } else {
+      // Standalone grid: emit per sub-key
+      elem = Grid(def, onChange ? (subKey, val) => onChange(subKey, val) : null);
     }
   } else {
-    wrapper.appendChild(control);
+    const wrapper = document.createElement('label');
+    wrapper.className = 'input';
+    wrapper.tabIndex = -1;
+
+    const control = createControl(def);
+    if (onChange) {
+      control.addEventListener('change', (evt) => onChange(def.key, evt.detail));
+    }
+
+    if (def.label !== false) {
+      const span = Label(document.createElement('span'));
+      span.textContent = def.label ?? def.key;
+      if (def.type === 'checkbox') {
+        wrapper.appendChild(control);
+        wrapper.appendChild(span);
+      } else {
+        wrapper.appendChild(span);
+        wrapper.appendChild(control);
+      }
+    } else {
+      wrapper.appendChild(control);
+    }
+
+    wrapper.getValue = control.getValue;
+    wrapper.setValue = control.setValue;
+    elem = wrapper;
   }
 
-  wrapper.getValue = control.getValue;
-  wrapper.setValue = control.setValue;
+  elem.setVisible = (v) => { elem.style.display = v ? '' : 'none'; };
+  if (def.disabledValue) elem.style.display = 'none';
 
-  return wrapper;
+  return elem;
 }
 
 export function Group(def, register = null, depth = 0) {
@@ -594,7 +857,10 @@ export function Group(def, register = null, depth = 0) {
   details.className = 'group';
   details.open = def.open ?? depth === 0;
 
-  const summary = Label(document.createElement('summary'), { group: true, label: def.title });
+  const summary = Label(document.createElement('summary'), {
+    group: true,
+    label: def.title,
+  });
   if (def.noToggle) {
     details.dataset.noToggle = '';
     summary.addEventListener('click', (e) => e.preventDefault());
@@ -612,10 +878,12 @@ export function Group(def, register = null, depth = 0) {
   summary.addEventListener('focus', () => {
     if (!keyboardNav) return;
     details.open = true;
-    const target = shiftNav ? lastFocusable(fieldsDiv) : firstFocusable(fieldsDiv);
+    const target = shiftNav
+      ? lastFocusable(fieldsDiv)
+      : firstFocusable(fieldsDiv);
     if (target) target.focus();
   });
-  details.addEventListener('contextmenu', (e) => {
+  summary.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     details.open = true;
     for (const sib of details.parentElement.children) {
@@ -638,6 +906,9 @@ export function Group(def, register = null, depth = 0) {
     }
   }
   details.appendChild(fieldsDiv);
+
+  details.setVisible = (v) => { details.style.display = v ? '' : 'none'; };
+  if (def.disabledValue) details.style.display = 'none';
 
   return details;
 }

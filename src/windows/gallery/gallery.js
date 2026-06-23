@@ -3,13 +3,13 @@ import * as Input from '../../components/ui/inputs.js';
 import sheet from './gallery.css' with { type: 'css' };
 document.adoptedStyleSheets.push(sheet);
 
-function SketchCard(filePath, name, enabled, previewDir) {
+function SketchCard(filePath, name, enabled, previewDir, previewPath) {
   const card = document.createElement('div');
   card.className = 'sketch-card';
 
   const img = document.createElement('img');
   img.className = 'card-preview';
-  img.src = `file://${previewDir}/${name}.jpg`;
+  img.src = previewPath ? `file://${previewPath}` : `file://${previewDir}/${name}.jpg`;
   img.alt = '';
   img.addEventListener('error', () => {
     img.style.display = 'none';
@@ -74,7 +74,7 @@ function GalleryPanel(elem) {
     grid.replaceChildren();
     cards = (state.paths ?? []).map((p) => {
       const name = state.names?.[p] ?? p.split('/').pop().replace(/\.js$/, '');
-      const card = SketchCard(p, name, enabledSet.has(p), state.previewDir);
+      const card = SketchCard(p, name, enabledSet.has(p), state.previewDir, state.previews?.[p]);
       card.querySelector('.card-check').addEventListener('change', emitEnabledPaths);
       grid.appendChild(card);
       return card;

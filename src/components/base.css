@@ -1,7 +1,6 @@
 :root {
   --color-bg: #000;
   --color-fg: #fff;
-  --color-select: #4dd0e1;
   --color-btn: #111;
   --color-field: #222;
   --color-active: #333;
@@ -10,6 +9,7 @@
   --color-muted: #666;
   --color-dim: #999;
   --color-hint: #aaa;
+  --color-select: #4dd0e1;
   --color-error: #d03030;
 }
 

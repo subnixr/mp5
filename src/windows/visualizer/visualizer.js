@@ -23,6 +23,7 @@ let sketchPath = window.args.sketchPath ?? null;
 let galleryDir = window.args.galleryDir ?? null;
 let galleryPaths = window.args.galleryPaths ?? null;
 let galleryNames = window.args.galleryNames ?? null;
+let galleryPreviews = window.args.galleryPreviews ?? null;
 
 async function importSketch(path, bust = false) {
   if (path) {
@@ -42,6 +43,7 @@ function pushGalleryState() {
     autoplay: gallery.autoplay,
     previewDir: galleryDir + '/.mp5-previews',
     names: galleryNames ?? {},
+    previews: galleryPreviews ?? {},
   });
 }
 
@@ -134,18 +136,20 @@ async function switchSketch(index) {
   engine.fadeIn();
   isSwitching = false;
 
-  setTimeout(() => {
-    const canvas = engine.getInstance()?.canvas;
-    if (canvas) {
-      window.api
-        .saveSketchPreview(
-          galleryDir,
-          newPath,
-          canvas.toDataURL('image/jpeg', 0.85),
-        )
-        .catch(() => {});
-    }
-  }, 500);
+  if (!galleryPreviews?.[newPath]) {
+    setTimeout(() => {
+      const canvas = engine.getInstance()?.canvas;
+      if (canvas) {
+        window.api
+          .saveSketchPreview(
+            galleryDir,
+            newPath,
+            canvas.toDataURL('image/jpeg', 0.85),
+          )
+          .catch(() => {});
+      }
+    }, 500);
+  }
 }
 
 async function main() {
@@ -209,18 +213,20 @@ async function main() {
   if (gallery) {
     pushGalleryState();
     resetAutoplay();
-    setTimeout(() => {
-      const canvas = engine.getInstance()?.canvas;
-      if (canvas) {
-        window.api
-          .saveSketchPreview(
-            galleryDir,
-            sketchPath,
-            canvas.toDataURL('image/jpeg', 0.85),
-          )
-          .catch(() => {});
-      }
-    }, 500);
+    if (!galleryPreviews?.[sketchPath]) {
+      setTimeout(() => {
+        const canvas = engine.getInstance()?.canvas;
+        if (canvas) {
+          window.api
+            .saveSketchPreview(
+              galleryDir,
+              sketchPath,
+              canvas.toDataURL('image/jpeg', 0.85),
+            )
+            .catch(() => {});
+        }
+      }, 500);
+    }
   }
 
   async function reloadSketch() {
@@ -268,6 +274,7 @@ async function main() {
       galleryDir = result.galleryDir;
       galleryPaths = result.galleryPaths;
       galleryNames = result.galleryNames;
+      galleryPreviews = result.galleryPreviews ?? null;
       gallery = galleryPaths?.length
         ? {
             paths: galleryPaths,
@@ -283,6 +290,7 @@ async function main() {
       galleryDir = null;
       galleryPaths = null;
       galleryNames = null;
+      galleryPreviews = null;
       gallery = null;
       controls.removeAttribute('data-gallery-mode');
     }
@@ -300,7 +308,7 @@ async function main() {
         sketchName,
         mode: engine.getMode(),
         canvasHint: engine.getCanvasHint(),
-        ...(galleryDir && { galleryDir, galleryPaths, galleryNames }),
+        ...(galleryDir && { galleryDir, galleryPaths, galleryNames, galleryPreviews }),
       });
       if (gallery) pushGalleryState();
     }

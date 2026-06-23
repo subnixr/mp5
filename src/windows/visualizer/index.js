@@ -17,9 +17,18 @@ function extractZipSketch(zipPath, destDir) {
   return fs.existsSync(entry) ? entry : null;
 }
 
+function findPreviewFile(dir) {
+  for (const ext of ['png', 'jpg']) {
+    const p = path.join(dir, `preview.${ext}`);
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
 function scanGalleryDir(dirPath, tmpDir) {
   const galleryPaths = [];
   const galleryNames = {};
+  const galleryPreviews = {};
   for (const entry of fs.readdirSync(dirPath).sort()) {
     if (entry.startsWith('.')) continue;
     const full = path.join(dirPath, entry);
@@ -32,16 +41,20 @@ function scanGalleryDir(dirPath, tmpDir) {
       if (entryJs) {
         galleryPaths.push(entryJs);
         galleryNames[entryJs] = name;
+        const preview = findPreviewFile(extractDir);
+        if (preview) galleryPreviews[entryJs] = preview;
       }
     } else if (entryStat?.isDirectory()) {
       const entryJs = path.join(full, 'sketch.js');
       if (fs.existsSync(entryJs)) {
         galleryPaths.push(entryJs);
         galleryNames[entryJs] = entry;
+        const preview = findPreviewFile(full);
+        if (preview) galleryPreviews[entryJs] = preview;
       }
     }
   }
-  return { galleryPaths, galleryNames };
+  return { galleryPaths, galleryNames, galleryPreviews };
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -81,7 +94,7 @@ export function runVisualizer(args) {
     const stat = fs.statSync(args.sketchPath, { throwIfNoEntry: false });
     if (stat?.isDirectory()) {
       const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`);
-      const { galleryPaths, galleryNames } = scanGalleryDir(
+      const { galleryPaths, galleryNames, galleryPreviews } = scanGalleryDir(
         args.sketchPath,
         tmpDir,
       );
@@ -89,6 +102,7 @@ export function runVisualizer(args) {
       args.sketchPath = galleryPaths[0] ?? null;
       args.galleryPaths = galleryPaths;
       args.galleryNames = galleryNames;
+      args.galleryPreviews = galleryPreviews;
     }
   }
 
@@ -226,10 +240,11 @@ export function runVisualizer(args) {
       args.galleryNames = null;
     } else if (fs.statSync(picked).isDirectory()) {
       const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`, 'picker');
-      const { galleryPaths, galleryNames } = scanGalleryDir(picked, tmpDir);
+      const { galleryPaths, galleryNames, galleryPreviews } = scanGalleryDir(picked, tmpDir);
       args.galleryDir = picked;
       args.galleryPaths = galleryPaths;
       args.galleryNames = galleryNames;
+      args.galleryPreviews = galleryPreviews;
       args.sketchPath = galleryPaths[0] ?? null;
       args.sketchSourcePath = null;
       args.sketchDisplayName = null;
@@ -249,6 +264,7 @@ export function runVisualizer(args) {
         galleryDir: picked,
         galleryPaths,
         galleryNames,
+        galleryPreviews,
       };
     } else {
       displayName = path.basename(picked, '.js');
@@ -279,13 +295,14 @@ export function runVisualizer(args) {
 
     if (stat.isDirectory()) {
       const tmpDir = path.join(os.tmpdir(), `mp5-${process.pid}`, 'drop');
-      const { galleryPaths, galleryNames } = scanGalleryDir(
+      const { galleryPaths, galleryNames, galleryPreviews } = scanGalleryDir(
         droppedPath,
         tmpDir,
       );
       args.galleryDir = droppedPath;
       args.galleryPaths = galleryPaths;
       args.galleryNames = galleryNames;
+      args.galleryPreviews = galleryPreviews;
       args.sketchPath = galleryPaths[0] ?? null;
       args.sketchSourcePath = null;
       args.sketchDisplayName = null;
@@ -305,6 +322,7 @@ export function runVisualizer(args) {
         galleryDir: droppedPath,
         galleryPaths,
         galleryNames,
+        galleryPreviews,
       };
     }
 

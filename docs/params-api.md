@@ -80,14 +80,17 @@ params('brightness', 0.8, {
   step: 0.01,
   decimals: 2, // fixed decimal display; also sets step if step is not provided
 });
+
+params('freq', 440, { type: 'number', label: 'Frequency', min: 20, max: 20000, unit: 'Hz' });
 ```
 
 | Opt        | Description                                                         |
 | ---------- | ------------------------------------------------------------------- |
 | `min`      | Minimum allowed value                                               |
 | `max`      | Maximum allowed value                                               |
-| `step`     | Increment for the input stepper                                     |
+| `step`     | Increment for stepping                                              |
 | `decimals` | Fixed number of decimal places shown; also infers `step` if not set |
+| `unit`     | Unit label shown beside the field; click increments, right-click decrements |
 
 ### `'text'`
 
@@ -148,42 +151,51 @@ params('mode', 'wave', {
 
 ### `'file'`
 
-File picker button. Value is an absolute file path string. Opens a system file dialog when clicked.
+File picker button. Value is an absolute file path string, or `null` when cleared. Opens a system file dialog when clicked; a clear button removes the current selection.
 
 ```js
 params('imagePath', '', { type: 'file' });
 ```
 
+### `'image'`
+
+Image file picker. Like `'file'` but adds a preview button: when a file is selected, clicking the preview button opens it in the system viewer; when no file is selected, it opens the picker instead.
+
+```js
+params('texture', null, { type: 'image', label: 'Texture' });
+```
+
 ## Grouping parameters
 
-Use `params.group(title, obj)` to organize params into collapsible sections in the settings window. Groups can be nested.
+Use `params.group(key, label, ...children)` to organize params into collapsible sections in the settings window. Children are individual param, combo, grid, or nested group objects. Groups can be nested.
 
 ```js
 const hue = params('hue', 180, { type: 'number', min: 0, max: 360 });
 const sat = params('sat', 80, { type: 'number', min: 0, max: 100 });
 const spd = params('spd', 1.0, { type: 'number', min: 0, max: 5 });
 
-const colorGroup = params.group('Color', { hue, sat });
-const motionGroup = params.group('Motion', { spd });
+const colorGroup = params.group('color', 'Color', hue, sat);
+const motionGroup = params.group('motion', 'Motion', spd);
 ```
 
 Top-level groups are expanded by default; nested groups are collapsed.
 
 ## Repeater
 
-Use `params.repeater(param, itemDefault, opts)` to make a parameter hold a variable-length array. The settings window renders the list with **+** / **−** buttons to add and remove items.
+Use `params.repeater(key, defaults, field, opts)` to make a parameter hold a variable-length array. The settings window renders the list with **+** / **−** buttons to add and remove items. Items can be reordered by dragging the handle on the left.
 
 ```js
-const colors = params('colors', [], { type: 'color', label: 'Colors' });
-const colorList = params.repeater(colors, '#ffffff', { min: 1, max: 8 });
+const color = params('color', '#ffffff', { type: 'color', label: 'Color' });
+const colorList = params.repeater('colors', ['#ffffff'], color, { min: 1, max: 8 });
 ```
 
-| Argument      | Description                                                      |
-| ------------- | ---------------------------------------------------------------- |
-| `param`       | A param object returned by `params()`                            |
-| `itemDefault` | Default value for each new item (scalar or object for combos)    |
-| `opts.min`    | Minimum number of items (default: `0`)                           |
-| `opts.max`    | Maximum number of items, or `null` for unlimited (default: `null`) |
+| Argument       | Description                                                               |
+| -------------- | ------------------------------------------------------------------------- |
+| `key`          | Storage key for the repeater array                                        |
+| `defaults`     | Initial array of values (padded to `opts.min` if shorter)                 |
+| `field`        | A param, combo, or grid object that defines each item's type              |
+| `opts.min`     | Minimum number of items (default: `0`)                                    |
+| `opts.max`     | Maximum number of items, or `null` for unlimited (default: `null`)        |
 
 Reading repeater values:
 
@@ -196,7 +208,7 @@ colorList[0].onChange(cb); // subscribe to changes on a specific item
 
 ## Combo
 
-Use `params.combo(key, label, ...paramObjs)` to display multiple params as a single row in the settings window. Each `paramObj` is a regular `params()` result.
+Use `params.combo(key, label, ...paramObjs)` to display multiple params as a single horizontal row in the settings window. Each `paramObj` is a regular `params()` result.
 
 ```js
 const stopColor = params('stopColor', '#ffffff', { type: 'color', label: 'Color' });
@@ -207,19 +219,71 @@ const stop = params.combo('stop', 'Stop', stopColor, stopPos);
 Pass a combo to `params.repeater()` to build a list of grouped rows (e.g. gradient stops):
 
 ```js
-const stops = params.repeater(stop, { stopColor: '#ffffff', stopPos: 0 }, { min: 2 });
+const stops = params.repeater('stops', [{ stopColor: '#ffffff', stopPos: 0 }], stop, { min: 2 });
 
 // Reading values:
 stops.value;               // [{ stopColor: '#ffffff', stopPos: 0 }, ...]
 stops[0].value;            // { stopColor: '#ffffff', stopPos: 0 }
-stops[0].stopColor.value;  // '#ffffff'
 ```
 
-Combo sub-params are **not** top-level keys in saved preset files. The whole repeater value is stored under the parent key:
+Combo sub-params are **not** top-level keys in saved preset files. The whole repeater value is stored under the repeater key:
 
 ```json
 { "stops": [{ "stopColor": "#ffffff", "stopPos": 0 }, { "stopColor": "#000000", "stopPos": 1 }] }
 ```
+
+## Grid
+
+Use `params.grid(key, columns, ...paramObjs)` to display multiple params in a CSS grid layout. The `columns` argument sets the number of grid columns. Individual params can span multiple columns via the `span` option.
+
+```js
+const r    = params('r',    0,   { type: 'number', min: 0, max: 255, label: 'R' });
+const g    = params('g',    128, { type: 'number', min: 0, max: 255, label: 'G' });
+const b    = params('b',    255, { type: 'number', min: 0, max: 255, label: 'B' });
+const name = params('name', '',  { type: 'text', label: 'Name', span: 3 });
+
+const colorDef = params.grid('colorDef', 3, r, g, b, name);
+```
+
+Grid sub-params are **not** top-level keys in preset files. The composite value is stored under the grid key:
+
+```json
+{ "colorDef": { "r": 0, "g": 128, "b": 255, "name": "" } }
+```
+
+Pass a grid to `params.repeater()` to build a list of grid rows:
+
+```js
+const rows = params.repeater('rows', [{ r: 0, g: 128, b: 255, name: '' }], colorDef, { min: 1 });
+```
+
+## Conditional visibility (`disabled`)
+
+Any param, repeater, or group can be hidden based on the value of another param. Pass a `disabled` option to conditionally hide the control when a condition is met.
+
+```js
+const showGrid = params('showGrid', true, { type: 'checkbox', label: 'Show grid' });
+
+// Hide when showGrid is false
+const gridSize = params('gridSize', 40, {
+  type: 'number', label: 'Grid size', min: 4, max: 200,
+  disabled: { param: showGrid, is: false },
+});
+
+// Hide when a select has a specific value
+const mode = params('mode', 'full', { type: 'select', options: ['simple', 'full'] });
+params.group('advancedGroup', 'Advanced', { disabled: { param: mode, is: 'simple' } },
+  params('detail', 8, { type: 'number', label: 'Detail', min: 1, max: 32 }),
+);
+```
+
+| `disabled` form               | Hides when…                          |
+| ----------------------------- | ------------------------------------ |
+| `'key'`                       | `params('key').value` is truthy      |
+| `paramObj`                    | `paramObj.value` is truthy           |
+| `{ param: paramObj, is: v }`  | `paramObj.value === v`               |
+
+For groups, the options object `{ disabled: … }` is passed as the first argument after the label, before the child params.
 
 ---
 
@@ -241,7 +305,7 @@ export default function (p, audio, params) {
     options: ['circle', 'square'],
   });
 
-  params.group('Controls', { speed, color, mode });
+  params.group('controls', 'Controls', speed, color, mode);
 
   let angle = 0;
 

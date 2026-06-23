@@ -4,6 +4,7 @@ peaks/
 .mp5-previews/
 
 /sketches
+/sketches/
 *.mp3
 *.wav
 *.mp4

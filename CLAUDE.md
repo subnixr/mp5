@@ -56,3 +56,5 @@ Always reuse `src/components/ui/` components for any input element (buttons, sli
 - default font size in DOM should be 16px
 - window background color is `#000000` (black), defined in `src/components/base.css`
 - avoid `!important` in CSS; fix specificity instead
+- css: use rem as much as possible (1rem = 10px, see base.css)
+- css: never use `var(--token, fallback)` — all color tokens must be defined in `src/components/base.css`; add missing ones there instead of using fallback defaults

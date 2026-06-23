@@ -46,112 +46,84 @@ export default function (p, audio, params) {
   let dtfn = {};
   let fadeIn = 0;
 
-  const {
-    smoothness: pSmooth,
-    volFloor: pVolFloor,
-    fadeInDuration: pFadeInDuration,
-  } = params.group('Animation', {
-    smoothness: params('smoothness', 0.95, {
+  const animation = params.group('animation', 'Animation',
+    params('smoothness', 0.95, {
       type: 'number',
       label: 'Smoothness',
       min: 0,
       max: 1,
       decimals: 2,
     }),
-    volFloor: params('volFloor', 0.1, {
+    params('volFloor', 0.1, {
       type: 'number',
       label: 'Vol floor',
       min: 0,
       max: 1,
       decimals: 2,
     }),
-    fadeInDuration: params('fadeInDuration', 2, {
+    params('fadeInDuration', 2, {
       type: 'number',
       label: 'Fade in (s)',
       min: 0,
       decimals: 1,
     }),
-  });
-
-  const bandParams = params.group(
-    'Bands',
-    Object.fromEntries(
-      Object.entries(BAND_CFG).flatMap(([k, cfg]) => {
-        const bandObj = Object.fromEntries([
-          [
-            `${k}Lo`,
-            params(`${k}Lo`, cfg.band[0], { type: 'number', label: `${k} lo` }),
-          ],
-          [
-            `${k}Hi`,
-            params(`${k}Hi`, cfg.band[1], { type: 'number', label: `${k} hi` }),
-          ],
-          ...(cfg.dynamicThreshold
-            ? [
-                [
-                  `${k}AlphaRise`,
-                  params(`${k}AlphaRise`, cfg.dynamicThreshold.alphaRise, {
-                    type: 'number',
-                    label: `${k} alpha rise`,
-                    min: 0,
-                    max: 1,
-                    decimals: 3,
-                  }),
-                ],
-                [
-                  `${k}AlphaFall`,
-                  params(`${k}AlphaFall`, cfg.dynamicThreshold.alphaFall, {
-                    type: 'number',
-                    label: `${k} alpha fall`,
-                    min: 0,
-                    max: 1,
-                    decimals: 3,
-                  }),
-                ],
-                [
-                  `${k}Kappa`,
-                  params(`${k}Kappa`, cfg.dynamicThreshold.kappa, {
-                    type: 'number',
-                    label: `${k} kappa`,
-                    min: 1,
-                    max: 5,
-                    decimals: 1,
-                  }),
-                ],
-              ]
-            : []),
-          ...(cfg.agc
-            ? [
-                [
-                  `${k}AgcN`,
-                  params(`${k}AgcN`, cfg.agc.n, {
-                    type: 'number',
-                    label: `${k} AGC n`,
-                    min: 10,
-                    step: 10,
-                  }),
-                ],
-              ]
-            : []),
-        ]);
-        return [[k, params.group(k, bandObj)], ...Object.entries(bandObj)];
-      }),
-    ),
   );
 
-  const fxParams = params.group(
-    'Effects',
-    Object.fromEntries(
-      Object.entries(FX_CFG).map(([k, cfg]) => [
-        `${k}Threshold`,
-        params(`${k}Threshold`, cfg.threshold ?? 0, {
-          type: 'number',
-          label: `${k} threshold`,
-          min: 0,
-          max: 1,
-          step: 0.01,
-        }),
-      ]),
+  const bandMap = {};
+  const bandGroups = Object.entries(BAND_CFG).map(([k, cfg]) => {
+    const children = [
+      params(`${k}Lo`, cfg.band[0], { type: 'number', label: `${k} lo` }),
+      params(`${k}Hi`, cfg.band[1], { type: 'number', label: `${k} hi` }),
+      ...(cfg.dynamicThreshold
+        ? [
+            params(`${k}AlphaRise`, cfg.dynamicThreshold.alphaRise, {
+              type: 'number',
+              label: `${k} alpha rise`,
+              min: 0,
+              max: 1,
+              decimals: 3,
+            }),
+            params(`${k}AlphaFall`, cfg.dynamicThreshold.alphaFall, {
+              type: 'number',
+              label: `${k} alpha fall`,
+              min: 0,
+              max: 1,
+              decimals: 3,
+            }),
+            params(`${k}Kappa`, cfg.dynamicThreshold.kappa, {
+              type: 'number',
+              label: `${k} kappa`,
+              min: 1,
+              max: 5,
+              decimals: 1,
+            }),
+          ]
+        : []),
+      ...(cfg.agc
+        ? [
+            params(`${k}AgcN`, cfg.agc.n, {
+              type: 'number',
+              label: `${k} AGC n`,
+              min: 10,
+              step: 10,
+            }),
+          ]
+        : []),
+    ];
+    for (const c of children) bandMap[c._key] = c;
+    return params.group(k, k, ...children);
+  });
+  params.group('bands', 'Bands', ...bandGroups);
+
+  const fxParams = params.group('fx', 'Effects',
+    ...Object.entries(FX_CFG).map(([k, cfg]) =>
+      params(`${k}Threshold`, cfg.threshold ?? 0, {
+        type: 'number',
+        label: `${k} threshold`,
+        min: 0,
+        max: 1,
+        step: 0.01,
+      }),
     ),
   );
 
@@ -168,16 +140,16 @@ export default function (p, audio, params) {
         agc: agcCfg,
         dynamicThreshold: dtCfg,
       } = BAND_CFG[k];
-      const lo = bandParams[`${k}Lo`].value;
-      const hi = bandParams[`${k}Hi`].value;
+      const lo = bandMap[`${k}Lo`].value;
+      const hi = bandMap[`${k}Hi`].value;
       transfn[k] = audio.transient(lo, hi, w);
       if (agcCfg != null)
-        agcfn[k] = audio.agc(0.9, bandParams[`${k}AgcN`].value);
+        agcfn[k] = audio.agc(0.9, bandMap[`${k}AgcN`].value);
       if (dtCfg != null)
         dtfn[k] = audio.dynamicThreshold(
-          bandParams[`${k}AlphaRise`].value,
-          bandParams[`${k}AlphaFall`].value,
-          bandParams[`${k}Kappa`].value,
+          bandMap[`${k}AlphaRise`].value,
+          bandMap[`${k}AlphaFall`].value,
+          bandMap[`${k}Kappa`].value,
         );
     });
   }
@@ -195,13 +167,13 @@ export default function (p, audio, params) {
   }
 
   function computeBand() {
-    const smoothness = pSmooth.value;
+    const smoothness = animation.smoothness.value;
     band.vol = audio.getVolumeLevel();
     smooth.vol = p.lerp(smooth.vol ?? 0, band.vol, smoothness);
 
     Object.keys(BAND_CFG).forEach((k) => {
-      const lo = bandParams[`${k}Lo`].value;
-      const hi = bandParams[`${k}Hi`].value;
+      const lo = bandMap[`${k}Lo`].value;
+      const hi = bandMap[`${k}Hi`].value;
       let bv = audio.getBand(lo, hi);
       if (agcfn[k]) bv = agcfn[k](bv);
       band[k] = bv;
@@ -210,7 +182,7 @@ export default function (p, audio, params) {
   }
 
   function computeEnvelopes() {
-    const volFloor = pVolFloor.value;
+    const volFloor = animation.volFloor.value;
     Object.keys(FX_CFG).forEach((k) => {
       const { band: bandName, envelope } = FX_CFG[k];
       const threshold = fxParams[`${k}Threshold`].value;
@@ -231,7 +203,7 @@ export default function (p, audio, params) {
   }
 
   function computeFadeIn() {
-    const d = pFadeInDuration.value;
+    const d = animation.fadeInDuration.value;
     fadeIn = audio.timeline(
       fadeIn,
       [

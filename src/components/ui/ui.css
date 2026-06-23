@@ -139,9 +139,15 @@
 }
 
 .repeater-row .input,
-.repeater-row .combo {
+.repeater-row .combo,
+.repeater-row .grid-fields {
   flex: 1;
   min-width: 0;
+}
+
+.repeater-row:has(.grid-fields),
+.repeater-row:has(.combo) {
+  align-items: stretch;
 }
 
 .repeater-remove {
@@ -155,6 +161,41 @@
 .repeater-remove:disabled {
   opacity: 0.5;
   pointer-events: none;
+}
+
+.repeater-remove:hover {
+  background: var(--color-error);
+}
+
+.repeater-remove:focus-visible {
+  background: var(--color-error);
+  outline: 1px solid var(--color-select);
+  outline-offset: -1px;
+}
+
+.repeater-row:has(.grid-fields) .repeater-remove {
+  margin-top: 2.7rem;
+  height: auto;
+}
+
+.repeater-handle {
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--color-border);
+}
+
+.repeater-row:has(.grid-fields) .repeater-handle {
+  margin-top: 2.7rem;
+  height: auto;
+}
+
+.repeater-row:has(.combo) .repeater-handle {
+  height: auto;
 }
 
 .repeater-add {
@@ -194,6 +235,7 @@
   border-radius: 0;
   color: var(--color-fg);
   font-family: inherit;
+  font-size: inherit;
   padding: 0 0.8rem;
   box-sizing: border-box;
   outline: none;
@@ -228,6 +270,20 @@
   border-color: var(--color-select);
 }
 
+/* --- Grid --- */
+
+.grid-fields {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols, 1), 1fr);
+  gap: 0.4rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.grid-fields > * {
+  min-width: 0;
+}
+
 /* --- Input field wrapper --- */
 
 .input {
@@ -246,12 +302,14 @@
 .input select,
 .input textarea {
   width: 100%;
+  min-width: 0;
   height: 3rem;
   background: var(--color-field);
   border: 1px solid var(--color-border);
   border-radius: 0;
   color: var(--color-fg);
   font-family: inherit;
+  font-size: inherit;
   padding: 0 0.8rem;
   box-sizing: border-box;
   outline: none;
@@ -266,8 +324,11 @@
 }
 
 .input input:focus,
-.input select:focus,
 .input textarea:focus {
+  border-color: var(--color-select);
+}
+
+.control.select:focus-within select {
   border-color: var(--color-select);
 }
 
@@ -302,6 +363,36 @@
   position: absolute;
   inset: 4px;
   background: var(--color-select);
+}
+
+/* --- Unit box (number fields) --- */
+
+.control.has-unit input {
+  padding-right: 4.8rem;
+}
+
+.control .unit-box {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 3rem;
+  min-width: 3rem;
+  padding: 0 0.8rem;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  font-size: 1.2rem;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+
+.control.has-unit:focus-within .unit-box {
+  border-color: var(--color-select);
 }
 
 /* --- Select indicator --- */
@@ -350,6 +441,10 @@
   border: 1px solid var(--color-border);
 }
 
+.control:has(.file-btn).has-value::after {
+  display: none;
+}
+
 .control:has(.file-btn):focus-within::after {
   border-color: var(--color-select);
 }
@@ -378,8 +473,97 @@
   border-color: var(--color-select);
 }
 
+.file-btn:focus ~ .file-clear {
+  border-left-color: var(--color-select);
+}
+
 .file-btn:hover {
   border-color: var(--color-muted);
+}
+
+.file-clear {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3rem;
+  height: 3rem;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  cursor: pointer;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  user-select: none;
+}
+
+.has-value .file-clear {
+  display: grid;
+}
+
+.file-clear:hover {
+  background: var(--color-error);
+  color: var(--color-fg);
+}
+
+.file-clear:focus {
+  outline: none;
+  background: var(--color-error);
+  border-color: var(--color-select);
+  color: var(--color-fg);
+}
+
+/* --- Image control (file + preview button) --- */
+
+.control:has(.image-preview-btn).has-value .file-btn {
+  padding-right: 6.4rem;
+}
+
+.control:has(.image-preview-btn) .file-clear {
+  right: 3rem;
+  border-right: none;
+}
+
+.image-preview-btn {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3rem;
+  height: 3rem;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  cursor: pointer;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  user-select: none;
+}
+
+.image-preview-btn {
+  display: grid;
+}
+
+.control:has(.image-preview-btn)::after {
+  display: none;
+}
+
+.image-preview-btn:focus {
+  outline: none;
+}
+
+.image-preview-btn:focus-visible {
+  background: var(--color-select);
+  border-color: var(--color-select);
+  color: var(--color-bg);
+}
+
+.file-btn:focus ~ .image-preview-btn {
+  border-left-color: var(--color-select);
+}
+
+.file-clear:focus ~ .image-preview-btn {
+  border-left-color: var(--color-select);
 }
 
 /* --- Color control --- */

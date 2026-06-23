@@ -192,22 +192,25 @@ function RenderingPanel(elem) {
   }
 
   const row1 = document.createElement('div');
-  row1.className = 'rp-row rp-row-3';
+  row1.className = 'rp-row rp-row-2';
   row1.appendChild(makeField('Width', widthCtrl));
   row1.appendChild(makeField('Height', heightCtrl));
-  row1.appendChild(makeField('FPS', fpsCtrl));
 
   const row2 = document.createElement('div');
-  row2.className = 'rp-row rp-row-3';
-  row2.appendChild(makeField('Skip', skipCtrl));
-  row2.appendChild(makeField('Length', lengthCtrl));
+  row2.className = 'rp-row rp-row-2';
+  row2.appendChild(makeField('FPS', fpsCtrl));
   row2.appendChild(makeField('Format', formatCtrl));
+
+  const row3 = document.createElement('div');
+  row3.className = 'rp-row rp-row-2';
+  row3.appendChild(makeField('Skip', skipCtrl));
+  row3.appendChild(makeField('Length', lengthCtrl));
 
   const group = Input.Group({
     title: 'rendering',
     open: true,
     noToggle: true,
-    children: [row1, row2, ffmpegDiv],
+    children: [row1, row2, row3, ffmpegDiv],
   });
   elem.appendChild(group);
 
@@ -287,11 +290,29 @@ function RenderingPanel(elem) {
 
 function ParamsPanel(elem) {
   const controls = new Map();
+  const disabledDeps = new Map(); // disabledKey → [{ elem, check }]
+
+  function triggerDisabled(key, value) {
+    for (const { elem: depElem, check } of (disabledDeps.get(key) ?? [])) {
+      depElem.setVisible(!check(value));
+    }
+  }
+
+  function wireDisabled(depElem, def) {
+    if (!def.disabledKey) return;
+    const check = def.disabledIs !== undefined
+      ? (v) => v === def.disabledIs
+      : (v) => Boolean(v);
+    if (!disabledDeps.has(def.disabledKey)) disabledDeps.set(def.disabledKey, []);
+    disabledDeps.get(def.disabledKey).push({ elem: depElem, check });
+  }
 
   function register(def) {
-    const field = Input.Field(def, (key, value) =>
-      window.api.updateParam(key, value),
-    );
+    const field = Input.Field(def, (key, value) => {
+      window.api.updateParam(key, value);
+      triggerDisabled(key, value);
+    });
+    wireDisabled(field, def);
     controls.set(def.key, field);
     return field;
   }
@@ -299,6 +320,7 @@ function ParamsPanel(elem) {
   elem.build = (defs) => {
     elem.replaceChildren();
     controls.clear();
+    disabledDeps.clear();
 
     const groups = defs.groups ?? [];
     const fields = defs.fields ?? [];
@@ -316,7 +338,9 @@ function ParamsPanel(elem) {
     }
 
     for (const group of groups) {
-      elem.appendChild(Input.Group(group, register));
+      const groupElem = Input.Group(group, register);
+      wireDisabled(groupElem, group);
+      elem.appendChild(groupElem);
     }
   };
 

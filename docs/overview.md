@@ -19,7 +19,7 @@ Supported formats: mp3, ogg, wav, aac, flac, m4a.
 
 ### Mic input
 
-The sketch receives live frequency analysis from the system microphone. There is no track, no duration, and no seek. Time is wall-clock time. Mic mode is only available in preview; rendering from the settings window while in mic mode produces a video with no audio stream.
+The sketch receives live frequency analysis from the system microphone. There is no track, no duration, and no seek. Time is wall-clock time. Mic mode is only available in preview; rendering from the settings window while in mic mode produces a video with no audio stream. Starting a render in mic mode shows a confirmation dialog before proceeding.
 
 Switching from mic back to file resumes the previously loaded file. Switching from file to mic stops playback but keeps the file loaded so it can be resumed.
 
@@ -148,6 +148,15 @@ Default format is `mov`. The codec flags are exposed in the **ffmpeg extra args*
 #### Transparent video output
 
 The window background is `#000000` (opaque black). For alpha-channel output (`mov` / `webm`), sketches must call `p.clear()` at the start of `draw()` instead of `p.background()` to produce transparent pixels — `p.background()` does not clear the canvas, so a transparent fill has no effect.
+
+### Render progress window
+
+While rendering, a progress window shows the current frame count and a cancel button. Two checkboxes control what happens when the render finishes:
+
+| Option              | Effect                                                              |
+| ------------------- | ------------------------------------------------------------------- |
+| **Quit on finish**  | The app exits automatically when the render completes               |
+| **Open folder on finish** | The output folder opens in the system file manager on completion |
 
 ### Environment variables
 

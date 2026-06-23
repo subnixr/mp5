@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, dialog } from 'electron';
+import { BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { spawnSync } from 'child_process';
@@ -76,6 +76,8 @@ export function openSettingsWindow(defs, visWin) {
     return JSON.parse(await fs.promises.readFile(filePaths[0], 'utf-8'));
   };
 
+  const onOpenFile = (_e, filePath) => shell.openPath(filePath);
+
   const onBrowseOutput = async (_e, defaultName) => {
     const missing = ['ffmpeg', 'ffprobe'].filter((b) => !hasBinary(b));
     if (missing.length) {
@@ -98,6 +100,7 @@ export function openSettingsWindow(defs, visWin) {
   ipcMain.handle('settings-request-file', onRequestFile);
   ipcMain.handle('settings-save', onSave);
   ipcMain.handle('settings-load', onLoad);
+  ipcMain.handle('settings-open-file', onOpenFile);
   ipcMain.handle('settings-browse-output', onBrowseOutput);
 
   win.on('closed', () => {
@@ -106,6 +109,7 @@ export function openSettingsWindow(defs, visWin) {
     ipcMain.removeHandler('settings-request-file');
     ipcMain.removeHandler('settings-save');
     ipcMain.removeHandler('settings-load');
+    ipcMain.removeHandler('settings-open-file');
     ipcMain.removeHandler('settings-browse-output');
   });
 
