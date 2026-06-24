@@ -106,6 +106,16 @@ export function runVisualizer(args) {
     }
   }
 
+  if (args.sketchSourcePath) {
+    args.sketchDir = os.homedir();
+  } else if (args.galleryDir) {
+    args.sketchDir = args.galleryDir;
+  } else if (args.sketchPath) {
+    args.sketchDir = path.dirname(args.sketchPath);
+  } else {
+    args.sketchDir = null;
+  }
+
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
@@ -153,6 +163,8 @@ export function runVisualizer(args) {
 
   let settingsWin = null;
   let galleryWin = null;
+  let lastSketchDir = null;
+  let lastAudioDir = null;
 
   const onOpenGallery = () => {
     if (galleryWin && !galleryWin.isDestroyed()) {
@@ -225,9 +237,11 @@ export function runVisualizer(args) {
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
       filters: [{ name: 'Audio', extensions: AUDIO_EXTS }],
+      defaultPath: lastAudioDir ?? os.homedir(),
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     const newPath = result.filePaths[0];
+    lastAudioDir = path.dirname(newPath);
     args.audioPath = newPath;
     if (audioWatcher) audioWatcher.close();
     audioWatcher = watchFileDebounced(newPath, () => {
@@ -274,9 +288,11 @@ export function runVisualizer(args) {
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
       filters: [{ name: 'Sketch', extensions: ['js', 'zip'] }],
+      defaultPath: lastSketchDir ?? os.homedir(),
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     const picked = result.filePaths[0];
+    lastSketchDir = path.dirname(picked);
 
     let entryPath = picked;
     let displayName;
@@ -319,6 +335,7 @@ export function runVisualizer(args) {
       return {
         path: args.sketchPath,
         displayName: path.basename(picked),
+        sketchDir: picked,
         galleryDir: picked,
         galleryPaths,
         galleryNames,
@@ -341,7 +358,8 @@ export function runVisualizer(args) {
         if (!win.isDestroyed()) win.webContents.send('sketch-changed');
       }),
     );
-    return { path: entryPath, displayName };
+    const sketchDir = args.sketchSourcePath ? os.homedir() : path.dirname(picked);
+    return { path: entryPath, displayName, sketchDir };
   };
 
   ipcMain.handle('open-sketch-picker', onOpenSketchPicker);

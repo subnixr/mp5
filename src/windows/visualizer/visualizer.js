@@ -8,6 +8,11 @@ import { handleErrors } from '../error.js';
 
 import eq from './sketches/eq.js';
 
+function sketchNameFromPath(p) {
+  const base = p.split('/').pop();
+  return base === 'sketch.js' ? p.split('/').slice(-2, -1)[0] : base.replace(/\.js$/, '');
+}
+
 const loader = Loader(document.querySelector('#loader'));
 const errorBar = ErrorBar(document.querySelector('#error-bar'));
 const engine = Engine(document.querySelector('#engine'));
@@ -22,6 +27,7 @@ let gallery = null;
 let isSwitching = false;
 let currentRendering = window.args.initialRendering ?? null;
 let sketchPath = window.args.sketchPath ?? null;
+let sketchDir = window.args.sketchDir ?? null;
 let galleryDir = window.args.galleryDir ?? null;
 let galleryPaths = window.args.galleryPaths ?? null;
 let galleryNames = window.args.galleryNames ?? null;
@@ -179,10 +185,11 @@ async function switchSketch(index) {
   window.api.setWatchSketch(newPath);
   controls.setSketchPath(newPath);
 
-  const sketchName = newPath.split('/').pop().replace(/\.js$/, '');
+  const sketchName = galleryNames?.[newPath] ?? sketchNameFromPath(newPath);
   window.api.pushSettingsDefs({
     ...engine.getParamsDefinitions(),
     sketchName,
+    sketchDir: galleryDir,
     mode: engine.getMode(),
     galleryDir: galleryDir,
     galleryPaths: galleryPaths,
@@ -254,7 +261,7 @@ async function main() {
   let sketchName = sketchPath
     ? (galleryNames?.[sketchPath] ??
       window.args.sketchDisplayName ??
-      sketchPath.split('/').pop().replace(/\.js$/, ''))
+      sketchNameFromPath(sketchPath))
     : null;
 
   const initialHint = engine.getCanvasHint();
@@ -274,6 +281,7 @@ async function main() {
   window.api.pushSettingsDefs({
     ...engine.getParamsDefinitions(),
     sketchName,
+    sketchDir,
     mode: engine.getMode(),
     canvasHint: engine.getCanvasHint(),
   });
@@ -315,6 +323,7 @@ async function main() {
     window.api.pushSettingsDefs({
       ...engine.getParamsDefinitions(),
       sketchName,
+      sketchDir,
       mode: engine.getMode(),
       canvasHint: engine.getCanvasHint(),
     });
@@ -377,6 +386,7 @@ async function main() {
 
     sketchPath = result.path;
     sketchName = result.displayName;
+    sketchDir = result.sketchDir ?? null;
     window.__sketchPath = sketchPath;
     const newSketch = await importSketch(sketchPath);
     if (newSketch) {
@@ -390,6 +400,7 @@ async function main() {
       window.api.pushSettingsDefs({
         ...engine.getParamsDefinitions(),
         sketchName,
+        sketchDir,
         mode: engine.getMode(),
         canvasHint: engine.getCanvasHint(),
         ...(galleryDir && {
@@ -437,6 +448,7 @@ async function main() {
     window.api.openSettings({
       ...(engine.getParamsDefinitions() ?? { groups: [], fields: [] }),
       sketchName,
+      sketchDir,
       mode: engine.getMode(),
       galleryDir: galleryDir ?? null,
       galleryPaths: galleryPaths ?? null,

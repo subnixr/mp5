@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
@@ -38,10 +39,13 @@ export function openSettingsWindow(defs, visWin) {
   relayConsole(win.webContents, 'settings');
 
   let sketchName = defs.sketchName ?? null;
+  let sketchDir = defs.sketchDir ?? null;
+  let lastPresetDir = null;
   const geometryLocked = defs.initialRendering?.width != null;
 
   const onDefsPush = (_e, d) => {
     if (d.sketchName) sketchName = d.sketchName;
+    if (d.sketchDir) sketchDir = d.sketchDir;
     const toSend = geometryLocked ? { ...d, canvasHint: null } : d;
     if (!win.isDestroyed()) win.webContents.send('settings-defs-push', toSend);
   };
@@ -67,11 +71,13 @@ export function openSettingsWindow(defs, visWin) {
 
   const onSave = async (_e, values) => {
     const filename = sketchName ? `${sketchName}.json` : 'params.json';
+    const baseDir = lastPresetDir ?? sketchDir ?? process.cwd();
     const { canceled, filePath } = await dialog.showSaveDialog(win, {
-      defaultPath: path.join(process.cwd(), filename),
+      defaultPath: path.join(baseDir, filename),
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
     if (canceled || !filePath) return false;
+    lastPresetDir = path.dirname(filePath);
     const payload = {
       params: toNested(values.params),
       rendering: values.rendering,
@@ -83,12 +89,14 @@ export function openSettingsWindow(defs, visWin) {
   // hand the chosen file to the visualizer, which parses and applies it through
   // the same path as a drag-and-dropped preset (it pushes values back here)
   const onLoad = async () => {
+    const baseDir = lastPresetDir ?? sketchDir ?? process.cwd();
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-      defaultPath: process.cwd(),
+      defaultPath: baseDir,
       properties: ['openFile'],
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
     if (canceled || !filePaths.length) return;
+    lastPresetDir = path.dirname(filePaths[0]);
     if (!visWin.isDestroyed())
       visWin.webContents.send('apply-preset-path', filePaths[0]);
   };
