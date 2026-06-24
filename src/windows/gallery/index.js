@@ -11,7 +11,7 @@ export function openGalleryWindow(visWin) {
     minWidth: 400,
     resizable: true,
     title: 'mp5 - gallery',
-    parent: visWin,
+    ...(process.platform !== 'darwin' && { parent: visWin }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,

@@ -21,8 +21,6 @@ export function openRenderProgressWindow({
     resizable: true,
     closable: false,
     title,
-    alwaysOnTop: true,
-    ...(process.platform === 'linux' && { type: 'dialog' }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,

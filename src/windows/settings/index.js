@@ -21,7 +21,7 @@ export function openSettingsWindow(defs, visWin) {
     minWidth: 360,
     resizable: true,
     title: 'mp5 - settings',
-    parent: visWin,
+    ...(process.platform !== 'darwin' && { parent: visWin }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -75,14 +75,17 @@ export function openSettingsWindow(defs, visWin) {
     return true;
   };
 
+  // hand the chosen file to the visualizer, which parses and applies it through
+  // the same path as a drag-and-dropped preset (it pushes values back here)
   const onLoad = async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
       defaultPath: process.cwd(),
       properties: ['openFile'],
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
-    if (canceled || !filePaths.length) return null;
-    return JSON.parse(await fs.promises.readFile(filePaths[0], 'utf-8'));
+    if (canceled || !filePaths.length) return;
+    if (!visWin.isDestroyed())
+      visWin.webContents.send('apply-preset-path', filePaths[0]);
   };
 
   const onOpenFile = (_e, filePath) => shell.openPath(filePath);
