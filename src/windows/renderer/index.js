@@ -67,9 +67,18 @@ function setupFrameCapture(
   let done = false;
   // Discard paint events until renderer signals it's in noLoop mode and ready.
   let ready = false;
+  // Actual canvas backing-store size (HiDPI displays make this larger than
+  // args.width×height). ffmpeg must read raw frames at this size, then scale
+  // down to the requested output size via the -vf scale filter.
+  let captureWidth = args.width;
+  let captureHeight = args.height;
   const filename = path.basename(args.output);
 
-  const onReady = () => {
+  const onReady = (_event, dims) => {
+    if (dims?.width > 0 && dims?.height > 0) {
+      captureWidth = dims.width;
+      captureHeight = dims.height;
+    }
     ready = true;
     webContents.send('render-next');
   };
@@ -78,8 +87,8 @@ function setupFrameCapture(
   const onFrame = (_event, buffer) => {
     if (done || !ready) return;
 
-    const width = args.width;
-    const height = args.height;
+    const width = captureWidth;
+    const height = captureHeight;
 
     if (!ffmpegProcess) {
       const ffArgs = [
@@ -218,8 +227,16 @@ async function prepareRenderArgs(args) {
     const audioDur = await getAudioDuration(args.audioPath);
     args.length = audioDur - (args.startTime ?? 0);
   }
-  const totalFrames =
+  // null length = open-ended render (mic mode). A non-finite length (e.g.
+  // ffprobe returned "N/A") must NOT slip through as a frame cap, or the
+  // render never stops — clamp it back to null and surface the failure.
+  const frames =
     args.length != null ? Math.ceil(args.length * args.frameRate) : null;
+  const totalFrames = Number.isFinite(frames) ? frames : null;
+  if (frames != null && totalFrames == null)
+    process.stderr.write(
+      `\n[mp5] could not determine audio duration; rendering open-ended\n`,
+    );
   return totalFrames;
 }
 

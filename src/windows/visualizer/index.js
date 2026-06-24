@@ -180,7 +180,12 @@ export function runVisualizer(args) {
       ? path.basename(args.audioPath, path.extname(args.audioPath))
       : null;
     settingsWin = openSettingsWindow(
-      { ...defs, audioBase, initialRendering: args.initialRendering ?? null },
+      {
+        ...defs,
+        audioBase,
+        initialRendering:
+          defs.initialRendering ?? args.initialRendering ?? null,
+      },
       win,
     );
     settingsWin.webContents.once('did-finish-load', () => {
@@ -193,6 +198,15 @@ export function runVisualizer(args) {
   };
 
   ipcMain.on('open-settings', onOpenSettings);
+
+  // forward rendering values from the visualizer (e.g. a dropped preset) into an
+  // already-open settings window so its rendering section stays in sync
+  const onSetSettingsRendering = (_e, r) => {
+    if (settingsWin && !settingsWin.isDestroyed())
+      settingsWin.webContents.send('settings-apply-rendering', r);
+  };
+
+  ipcMain.on('settings-set-rendering', onSetSettingsRendering);
 
   const AUDIO_EXTS = ['mp3', 'ogg', 'wav', 'aac', 'flac', 'm4a'];
 
@@ -537,6 +551,7 @@ export function runVisualizer(args) {
     ipcMain.removeHandler('open-sketch-picker');
     ipcMain.off('open-sketch-in-editor', onOpenSketchInEditor);
     ipcMain.off('open-settings', onOpenSettings);
+    ipcMain.off('settings-set-rendering', onSetSettingsRendering);
     ipcMain.removeHandler('trigger-render');
     ipcMain.off('set-watch-sketch', onSetWatchSketch);
     ipcMain.removeHandler('save-sketch-preview');

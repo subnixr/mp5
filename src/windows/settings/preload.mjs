@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('api', {
   requestFile: (key) => ipcRenderer.invoke('settings-request-file', key),
   onDefinitionsChanged: (cb) =>
     ipcRenderer.on('settings-defs-push', (_e, defs) => cb(defs)),
+  onApplyRendering: (cb) =>
+    ipcRenderer.on('settings-apply-rendering', (_e, r) => cb(r)),
+  pushRendering: (r) => ipcRenderer.send('settings-rendering-changed', r),
   saveParams: (values) => ipcRenderer.invoke('settings-save', values),
   loadParams: () => ipcRenderer.invoke('settings-load'),
   browseOutput: (defaultName) =>

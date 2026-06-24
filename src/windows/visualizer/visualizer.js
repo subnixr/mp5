@@ -19,6 +19,7 @@ windowSize.addEventListener('resize-request', (evt) => {
 
 let gallery = null;
 let isSwitching = false;
+let currentRendering = window.args.initialRendering ?? null;
 let sketchPath = window.args.sketchPath ?? null;
 let galleryDir = window.args.galleryDir ?? null;
 let galleryPaths = window.args.galleryPaths ?? null;
@@ -347,6 +348,10 @@ async function main() {
     } else if (result.type === 'preset') {
       engine.updateParams(result.params);
       const r = result.rendering;
+      if (r) {
+        currentRendering = { ...(currentRendering ?? {}), ...r };
+        window.api.setSettingsRendering(currentRendering);
+      }
       if (r?.width && r?.height) {
         window.api.resizeWindow(
           Math.round(r.width * 0.5),
@@ -366,6 +371,10 @@ async function main() {
     }
   });
 
+  window.api.onRenderingUpdate((_e, r) => {
+    currentRendering = { ...(currentRendering ?? {}), ...r };
+  });
+
   function openSettings() {
     window.api.openSettings({
       ...(engine.getParamsDefinitions() ?? { groups: [], fields: [] }),
@@ -375,6 +384,7 @@ async function main() {
       galleryPaths: galleryPaths ?? null,
       galleryNames: galleryNames ?? null,
       canvasHint: engine.getCanvasHint(),
+      initialRendering: currentRendering,
     });
   }
 

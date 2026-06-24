@@ -46,6 +46,8 @@ window.api.onDefinitionsChanged((defs) => {
     });
 });
 
+window.api.onApplyRendering((r) => renderPanel.applyValues(r));
+
 document
   .querySelector('[data-action="save"]')
   .addEventListener('click', async () => {
@@ -250,6 +252,16 @@ function RenderingPanel(elem) {
   fpsCtrl.addEventListener('change', updatePreview);
   skipInput.addEventListener('input', updatePreview);
   lengthInput.addEventListener('input', updatePreview);
+
+  // mirror edits back to the visualizer so rendering state outlives this window
+  function notifyRendering() {
+    window.api.pushRendering(elem.getValues());
+  }
+
+  for (const ctrl of [widthCtrl, heightCtrl, fpsCtrl, formatCtrl])
+    ctrl.addEventListener('change', notifyRendering);
+  for (const input of [skipInput, lengthInput, ffmpegExtra])
+    input.addEventListener('input', notifyRendering);
 
   updatePreview();
 

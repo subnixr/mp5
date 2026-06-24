@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('args', {
   galleryNames: args.galleryNames ?? null,
   sketchDisplayName: args.sketchDisplayName ?? null,
   openSettings: args.openSettings ?? false,
+  initialRendering: args.initialRendering ?? null,
 });
 
 contextBridge.exposeInMainWorld('api', {
@@ -29,11 +30,13 @@ contextBridge.exposeInMainWorld('api', {
   getPathForFile: (file) => webUtils.getPathForFile(file),
   openSketchInEditor: (filePath) =>
     ipcRenderer.send('open-sketch-in-editor', filePath),
-  notifyReady: () => ipcRenderer.send('renderer-ready'),
+  notifyReady: (dims) => ipcRenderer.send('renderer-ready', dims),
   sendFrame: (buffer) => ipcRenderer.send('renderer-frame', buffer),
   openSettings: (defs) => ipcRenderer.send('open-settings', defs),
   openGallery: () => ipcRenderer.send('open-gallery'),
   pushSettingsDefs: (defs) => ipcRenderer.send('settings-defs-push', defs),
+  setSettingsRendering: (r) => ipcRenderer.send('settings-set-rendering', r),
+  onRenderingUpdate: (cb) => ipcRenderer.on('rendering-update', cb),
   onFullscreenChange: (cb) => ipcRenderer.on('fullscreen-changed', cb),
   onSketchChanged: (cb) => ipcRenderer.on('sketch-changed', cb),
   onAudioChanged: (cb) => ipcRenderer.on('audio-changed', cb),

@@ -45,7 +45,12 @@ async function main() {
       const { data } = ctx2d.getImageData(0, 0, canvas.width, canvas.height);
       window.api.sendFrame(data.buffer);
     });
-    window.api.notifyReady(); // main process sends first render-next, pipeline starts
+    // Report the real backing-store size: on HiDPI displays p5's default
+    // pixelDensity makes canvas.width/height = devicePixelRatio × requested
+    // size, so the captured buffer is larger than args.width×height. ffmpeg
+    // must read frames at this size (then scale down) or it mis-slices the
+    // pipe into garbled, time-stretched frames.
+    window.api.notifyReady({ width: canvas.width, height: canvas.height });
   }
 }
 

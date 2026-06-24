@@ -49,6 +49,12 @@ export function openSettingsWindow(defs, visWin) {
     if (!visWin.isDestroyed()) visWin.webContents.send('settings-update', obj);
   };
 
+  // keep the visualizer's rendering state in sync with edits made here so it
+  // survives the settings window being closed and reopened
+  const onRenderingChanged = (_e, r) => {
+    if (!visWin.isDestroyed()) visWin.webContents.send('rendering-update', r);
+  };
+
   const onRequestFile = async (_e, key) => {
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
@@ -100,6 +106,7 @@ export function openSettingsWindow(defs, visWin) {
 
   ipcMain.on('settings-defs-push', onDefsPush);
   ipcMain.on('settings-update', onParamsUpdate);
+  ipcMain.on('settings-rendering-changed', onRenderingChanged);
   ipcMain.handle('settings-request-file', onRequestFile);
   ipcMain.handle('settings-save', onSave);
   ipcMain.handle('settings-load', onLoad);
@@ -109,6 +116,7 @@ export function openSettingsWindow(defs, visWin) {
   win.on('closed', () => {
     ipcMain.off('settings-defs-push', onDefsPush);
     ipcMain.off('settings-update', onParamsUpdate);
+    ipcMain.off('settings-rendering-changed', onRenderingChanged);
     ipcMain.removeHandler('settings-request-file');
     ipcMain.removeHandler('settings-save');
     ipcMain.removeHandler('settings-load');
