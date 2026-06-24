@@ -127,11 +127,31 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 | `-L [[HH:]MM:]SS` | Animation window length (render only; required if no AUDIO)              |
 | `-F FPS`          | Render frame rate (default: 60)                                          |
 | `-g WxH`          | Output resolution (default: 1920×1080); overrides `params.canvas()` hint |
-| `-p FILE`         | Load initial params from a JSON preset file                              |
-| `-P JSON`         | Pass initial params as an inline JSON string                             |
-| `--help`          | Show usage                                                               |
+| `-p FILE`         | Load initial params (and optionally render settings) from a JSON preset file |
+| `-P JSON`         | Pass initial params as an inline JSON string                                 |
+| `--help`          | Show usage                                                                   |
 
 `-p` and `-P` can be combined; inline `-P` values override file `-p` values for the same keys.
+
+### Preset file format
+
+Preset files use a structured envelope so params and render settings can coexist:
+
+```json
+{
+  "params": { "speed": 2.5, "color": "#00ffcc", "mode": "square" },
+  "rendering": { "width": 1920, "height": 1080, "fps": 60 }
+}
+```
+
+`rendering` is optional. The **Save** button in the settings window always writes the structured envelope. The **Load** button and drag-and-drop accept this format; rendering values in a loaded preset are applied to the settings window immediately.
+
+For combo and grid params, nested objects and flat dotted keys are both valid in `params`:
+
+```json
+{ "params": { "colorDef": { "r": 0, "g": 128, "b": 255 } } }
+{ "params": { "colorDef.r": 0, "colorDef.g": 128, "colorDef.b": 255 } }
+```
 
 ### ffmpeg (render mode)
 
@@ -190,6 +210,9 @@ mp5 sketch.js -o out.mp4 -L 30 -g 1280x720
 
 # Pass initial params
 mp5 sketch.js track.mp3 -P '{"speed": 2.5, "color": "#ff0000"}'
+
+# Load a structured preset (params + render settings)
+mp5 sketch.js track.mp3 -p preset.json
 
 # Preview a zipped sketch with assets
 mp5 sketch.zip track.mp3

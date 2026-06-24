@@ -452,7 +452,7 @@ export function runVisualizer(args) {
       const content = JSON.parse(fs.readFileSync(droppedPath, 'utf8'));
       return {
         type: 'preset',
-        params: content.params ?? content,
+        params: content.params,
         rendering: content.rendering ?? null,
       };
     }

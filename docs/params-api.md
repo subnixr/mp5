@@ -372,10 +372,22 @@ export default function (p, audio, params) {
 
 ## Preset files
 
-Params can be pre-seeded from a JSON object mapping param keys to values:
+Preset files use a structured envelope that can carry both params and render settings:
 
 ```json
-{ "speed": 2.5, "color": "#00ffcc", "mode": "square" }
+{
+  "params": { "speed": 2.5, "color": "#00ffcc", "mode": "square" },
+  "rendering": { "width": 1920, "height": 1080, "fps": 60 }
+}
+```
+
+`rendering` is optional.
+
+For combo and grid params, nested objects and flat dotted keys are both valid:
+
+```json
+{ "params": { "colorDef": { "r": 0, "g": 128, "b": 255 } } }
+{ "params": { "colorDef.r": 0, "colorDef.g": 128, "colorDef.b": 255 } }
 ```
 
 ```sh
@@ -385,4 +397,4 @@ mp5 sketch.js audio.mp3 -P '{"speed": 2.5}'   # inline JSON
 
 Both flags can be combined; `-P` values override `-p` values for the same key. Only values whose type matches the registered default are applied; mismatches are silently ignored.
 
-The settings window also has **Save** and **Load** buttons to export/import the current param values as a JSON preset file.
+The settings window has **Save** and **Load** buttons to export/import the current param values as a JSON preset file. **Save** always writes the structured envelope; **Load** applies any `rendering` values in the preset.
