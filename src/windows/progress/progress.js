@@ -2,6 +2,7 @@ import Button from '../../components/ui/button.js';
 import { Field } from '../../components/ui/inputs.js';
 
 const barFill = document.querySelector('#bar-fill');
+barFill.classList.add('loading');
 const log = document.querySelector('#log');
 const info = document.querySelector('#info');
 const renderOpts = document.querySelector('#render-opts');
@@ -77,6 +78,9 @@ window.api.onProgress((data) => {
     closeAppBtn.style.display = '';
     return;
   }
-  if (data.percent != null) barFill.style.width = data.percent.toFixed(1) + '%';
+  if (data.percent != null) {
+    barFill.classList.remove('loading');
+    barFill.style.width = data.percent.toFixed(1) + '%';
+  }
   if (data.line != null) log.textContent = data.line;
 });

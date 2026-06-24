@@ -17,6 +17,7 @@ body {
 }
 
 #bar-track {
+  position: relative;
   height: 1.2rem;
   background: var(--color-field);
   box-sizing: border-box;
@@ -28,6 +29,24 @@ body {
   width: 0%;
   background: var(--color-select);
   transition: width 0.3s ease;
+}
+
+#bar-fill.loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  transition: none;
+  animation: bar-loading 1.4s ease-in-out infinite;
+}
+
+@keyframes bar-loading {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
 }
 
 #log {
