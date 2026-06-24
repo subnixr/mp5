@@ -86,6 +86,9 @@ export default function Engine(elem) {
   elem.getCanvasHint = () => activeParams?.canvas?.get?.() ?? null;
   elem.setParams = (obj) => activeParams?.queue(obj);
   elem.updateParams = (obj) => activeParams?.queue(obj);
+  // apply queued updates now (instead of at the next draw) so a caller can read
+  // them back via getParamsDefinitions in the same tick
+  elem.flushParams = () => activeParams?.flush();
   elem.setInitialParams = (obj) => Object.assign(preservedParams, obj);
   elem.setRenderFps = (fps) => {
     renderFps = fps;

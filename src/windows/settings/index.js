@@ -5,6 +5,7 @@ import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
 import { resolveBinary } from '../../binaries.js';
+import { toNested } from '../../components/engine/preset.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -71,7 +72,11 @@ export function openSettingsWindow(defs, visWin) {
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
     if (canceled || !filePath) return false;
-    await fs.promises.writeFile(filePath, JSON.stringify(values, null, 2));
+    const payload = {
+      params: toNested(values.params),
+      rendering: values.rendering,
+    };
+    await fs.promises.writeFile(filePath, JSON.stringify(payload, null, 2));
     return true;
   };
 

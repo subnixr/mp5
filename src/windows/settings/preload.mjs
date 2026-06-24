@@ -14,11 +14,14 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('settings-defs-push', (_e, defs) => cb(defs)),
   onApplyRendering: (cb) =>
     ipcRenderer.on('settings-apply-rendering', (_e, r) => cb(r)),
+  onApplyParams: (cb) =>
+    ipcRenderer.on('settings-apply-params', (_e, p) => cb(p)),
   pushRendering: (r) => ipcRenderer.send('settings-rendering-changed', r),
   saveParams: (values) => ipcRenderer.invoke('settings-save', values),
   loadParams: () => ipcRenderer.invoke('settings-load'),
   browseOutput: (defaultName) =>
     ipcRenderer.invoke('settings-browse-output', defaultName),
   openFile: (filePath) => ipcRenderer.invoke('settings-open-file', filePath),
+  confirmMicRender: () => ipcRenderer.invoke('confirm-mic-render'),
   triggerRender: (payload) => ipcRenderer.invoke('trigger-render', payload),
 });

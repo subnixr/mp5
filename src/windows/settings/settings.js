@@ -28,10 +28,9 @@ document.querySelectorAll('.btn').forEach(Button);
 
 panel.build(currentDefs);
 
-if (window.api.definitions.canvasHint) {
-  const { w, h } = window.api.definitions.canvasHint;
-  renderPanel.applyValues({ width: w, height: h });
-}
+// the visualizer owns the rendering state; we only reflect it. canvas size is
+// already baked into initialRendering by the visualizer, so we never re-seed
+// from canvasHint here (that would overwrite the real state on open).
 if (window.api.definitions.initialRendering) {
   renderPanel.applyValues(window.api.definitions.initialRendering);
 }
@@ -39,14 +38,17 @@ if (window.api.definitions.initialRendering) {
 window.api.onDefinitionsChanged((defs) => {
   currentDefs = defs;
   panel.build(defs);
-  if (defs.canvasHint)
-    renderPanel.applyValues({
-      width: defs.canvasHint.w,
-      height: defs.canvasHint.h,
-    });
 });
 
 window.api.onApplyRendering((r) => renderPanel.applyValues(r));
+
+// a preset load pushes fresh param definitions; rebuild the panel from them
+// (preserving the metadata the render panel relies on) so composite params
+// repopulate correctly
+window.api.onApplyParams((defs) => {
+  currentDefs = { ...currentDefs, groups: defs.groups, fields: defs.fields };
+  panel.build(currentDefs);
+});
 
 document
   .querySelector('[data-action="save"]')
@@ -60,45 +62,18 @@ document
     }
   });
 
-document
-  .querySelector('[data-action="load"]')
-  .addEventListener('click', async () => {
-    try {
-      const data = await window.api.loadParams();
-      if (!data) return;
-      const { rendering, params } = data;
-      const sketchParams =
-        params ??
-        (() => {
-          const { rendering: _, ...rest } = data;
-          return rest;
-        })();
-      panel.applyValues(sketchParams);
-      if (rendering) renderPanel.applyValues(rendering);
-      if (rendering?.width && rendering?.height) {
-        window.api.resizeWindow(
-          Math.round(rendering.width * 0.5),
-          Math.round(rendering.height * 0.5),
-        );
-      } else if (currentDefs.canvasHint) {
-        const { w, h } = currentDefs.canvasHint;
-        window.api.resizeWindow(Math.round(w * 0.5), Math.round(h * 0.5));
-      }
-    } catch (e) {
-      console.error('loadParams failed:', e);
-    }
-  });
+document.querySelector('[data-action="load"]').addEventListener('click', () => {
+  // the visualizer parses the file and applies it (same path as a dropped
+  // preset), then pushes params + rendering back into these panels
+  window.api.loadParams();
+});
 
 document
   .querySelector('[data-action="render"]')
   .addEventListener('click', async () => {
-    const isMic = !currentDefs.audioBase;
-    if (isMic) {
-      const ok = confirm(
-        'Rendering in mic mode: audio data will be zero.\n\nContinue?',
-      );
-      if (!ok) return;
-    }
+    // the visualizer (which owns the live input mode) warns + confirms via a
+    // native dialog before the save sheet, so the macOS sheets don't stack
+    if (!(await window.api.confirmMicRender())) return;
 
     const rv = renderPanel.getValues();
     const sketchName = currentDefs.sketchName ?? null;
@@ -254,7 +229,12 @@ function RenderingPanel(elem) {
   lengthInput.addEventListener('input', updatePreview);
 
   // mirror edits back to the visualizer so rendering state outlives this window
+  // setValue emits 'change', so applyValues would otherwise echo programmatic
+  // updates back to the visualizer and clobber the real state — suppress while
+  // applying so only genuine user edits are pushed
+  let applying = false;
   function notifyRendering() {
+    if (applying) return;
     window.api.pushRendering(elem.getValues());
   }
 
@@ -282,16 +262,24 @@ function RenderingPanel(elem) {
 
   elem.applyValues = (obj) => {
     if (!obj) return;
+    // accept both the saved shape (fps/skip/ffmpegExtraArgs) and the render
+    // shape (frameRate/startTime/ffmpegExtra) so presets and return-from-render
+    // both populate correctly
+    const fps = obj.fps ?? obj.frameRate;
+    const skip = obj.skip ?? (obj.startTime || undefined);
+    const ffmpeg = obj.ffmpegExtraArgs ?? obj.ffmpegExtra;
+    applying = true;
     if (obj.width != null) widthCtrl.setValue(obj.width);
     if (obj.height != null) heightCtrl.setValue(obj.height);
-    if (obj.fps != null) fpsCtrl.setValue(obj.fps);
-    skipCtrl.setValue(obj.skip ?? '');
+    if (fps != null) fpsCtrl.setValue(fps);
+    skipCtrl.setValue(skip ?? '');
     lengthCtrl.setValue(obj.length ?? (isMic ? MIC_DEFAULT_LENGTH : ''));
-    if (obj.ffmpegExtraArgs != null) {
-      ffmpegExtra.value = obj.ffmpegExtraArgs;
-      syncFormatSelect(obj.ffmpegExtraArgs);
+    if (ffmpeg != null) {
+      ffmpegExtra.value = ffmpeg;
+      syncFormatSelect(ffmpeg);
       ffmpegComp.resizeTextarea();
     }
+    applying = false;
     updatePreview();
   };
 
@@ -362,22 +350,6 @@ function ParamsPanel(elem) {
     const values = {};
     for (const [key, field] of controls) values[key] = field.getValue();
     return values;
-  };
-
-  elem.applyValues = (obj) => {
-    console.log(
-      '[applyValues] obj keys:',
-      Object.keys(obj),
-      '| controls keys:',
-      [...controls.keys()],
-    );
-    for (const [key, val] of Object.entries(obj)) {
-      const field = controls.get(key);
-      if (field) {
-        console.log('[applyValues] setting', key, '=', val);
-        field.setValue(val);
-      }
-    }
   };
 
   return elem;

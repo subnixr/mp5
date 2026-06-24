@@ -208,6 +208,15 @@ export function runVisualizer(args) {
 
   ipcMain.on('settings-set-rendering', onSetSettingsRendering);
 
+  // forward preset params into an already-open settings window so its param
+  // fields stay in sync with a dropped/loaded preset
+  const onSetSettingsParams = (_e, p) => {
+    if (settingsWin && !settingsWin.isDestroyed())
+      settingsWin.webContents.send('settings-apply-params', p);
+  };
+
+  ipcMain.on('settings-set-params', onSetSettingsParams);
+
   const AUDIO_EXTS = ['mp3', 'ogg', 'wav', 'aac', 'flac', 'm4a'];
 
   let audioWatcher = null;
@@ -228,6 +237,38 @@ export function runVisualizer(args) {
   };
 
   ipcMain.handle('open-audio-picker', onOpenAudioPicker);
+
+  // switching to mic input drops the audio file, so render reflects mic mode
+  const onSwitchToMic = () => {
+    args.audioPath = null;
+    if (audioWatcher) {
+      audioWatcher.close();
+      audioWatcher = null;
+    }
+  };
+
+  ipcMain.on('switch-to-mic', onSwitchToMic);
+
+  // render mic-mode guard: in mic mode (no audio file) audio data is zero, so
+  // warn before rendering. Native dialog over the settings window — renderer
+  // confirm() is suppressed on macOS where the settings window is parentless.
+  const onConfirmMicRender = async () => {
+    if (args.audioPath) return true; // file mode: proceed
+    const parent =
+      settingsWin && !settingsWin.isDestroyed() ? settingsWin : win;
+    const { response } = await dialog.showMessageBox(parent, {
+      type: 'warning',
+      buttons: ['Cancel', 'Render anyway'],
+      defaultId: 0,
+      cancelId: 0,
+      title: 'Mic mode',
+      message: 'Rendering in mic mode: audio data will be zero.',
+      detail: 'Continue?',
+    });
+    return response === 1;
+  };
+
+  ipcMain.handle('confirm-mic-render', onConfirmMicRender);
 
   const onOpenSketchPicker = async () => {
     const result = await dialog.showOpenDialog(win, {
@@ -544,10 +585,14 @@ export function runVisualizer(args) {
   ipcMain.on('gallery-settings-update', onGallerySettingsUpdate);
 
   win.on('closed', () => {
+    if (settingsWin && !settingsWin.isDestroyed()) settingsWin.close();
+    if (galleryWin && !galleryWin.isDestroyed()) galleryWin.close();
     ipcMain.off('toggle-fullscreen', onToggleFullscreen);
     ipcMain.off('resize-window', onResizeWindow);
     ipcMain.off('open-gallery', onOpenGallery);
     ipcMain.removeHandler('open-audio-picker');
+    ipcMain.off('switch-to-mic', onSwitchToMic);
+    ipcMain.removeHandler('confirm-mic-render');
     ipcMain.removeHandler('open-sketch-picker');
     ipcMain.off('open-sketch-in-editor', onOpenSketchInEditor);
     ipcMain.off('open-settings', onOpenSettings);

@@ -81,14 +81,6 @@ export default function Controls(elem) {
   let sketchPath = window.args.sketchPath ?? null;
   let sketchDisplayName = window.args.sketchDisplayName ?? null;
 
-  function resolveSketchName() {
-    return (
-      window.args.galleryNames?.[sketchPath] ??
-      sketchDisplayName ??
-      (sketchPath ? sketchPath.split('/').pop().replace(/\.js$/, '') : null)
-    );
-  }
-
   function mute() {
     oldVolume = engine?.getVolume();
     engine?.setVolume(0);
@@ -154,6 +146,7 @@ export default function Controls(elem) {
     }),
     inputSwitch: withEvents(Switch(elem.querySelector('[data-input-switch]')), {
       mic: () => {
+        window.api.switchToMic();
         engine?.loadMic();
       },
       file: async () => {
@@ -163,17 +156,9 @@ export default function Controls(elem) {
     }),
     trackLength: elem.querySelector('[data-track-length]'),
     param: withEvents(elem.querySelector('[data-param]'), {
-      click: () => {
-        const defs = engine?.getParamsDefinitions() ?? {
-          groups: [],
-          fields: [],
-        };
-        window.api.openSettings({
-          ...defs,
-          mode: engine?.getMode(),
-          sketchName: resolveSketchName(),
-        });
-      },
+      // let the visualizer open settings so it can include the rendering state
+      // it owns; opening here would lose it and reset the render options
+      click: () => elem.dispatchEvent(new CustomEvent('open-settings')),
     }),
     gallery: withEvents(elem.querySelector('[data-gallery]'), {
       click: () => window.api.openGallery(),

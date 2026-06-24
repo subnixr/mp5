@@ -1,6 +1,7 @@
 import Loader from './components/loader.js';
 import ErrorBar from './components/errorBar.js';
 import Engine from '../../components/engine/index.js';
+import { fromNested } from '../../components/engine/preset.js';
 import Controls from './components/controls.js';
 import WindowSize from './components/windowSize.js';
 import { handleErrors } from '../error.js';
@@ -66,6 +67,51 @@ function buildShuffledQueue() {
   gallery.queuePos = 0;
 }
 
+// the visualizer is the source of truth for rendering state; build a complete
+// rendering object from the CLI args and the sketch's canvas hint so the
+// settings window can purely reflect it instead of inventing its own defaults
+function buildDefaultRendering() {
+  const hint = engine.getCanvasHint();
+  return {
+    width: window.args.width ?? hint?.w ?? 1920,
+    height: window.args.height ?? hint?.h ?? 1080,
+    fps: window.args.frameRate ?? 60,
+  };
+}
+
+// single entry point for preset application, shared by the drop handler and the
+// settings "load" button so both behave identically. `preset` is the shape
+// returned by openPath: { params, rendering }.
+function applyPreset(preset) {
+  // preset.params is nested; the engine keys params by flat dotted paths
+  engine.updateParams(fromNested(preset.params));
+  // apply immediately and hand the settings window fresh definitions so it
+  // rebuilds from the engine (the source of truth) instead of trying to map
+  // raw values onto fields — which breaks for combo/grid/repeater params
+  engine.flushParams();
+  window.api.setSettingsParams(engine.getParamsDefinitions());
+
+  const r = preset.rendering;
+  if (r) {
+    currentRendering = { ...(currentRendering ?? {}), ...r };
+    window.api.setSettingsRendering(currentRendering);
+  }
+
+  if (r?.width && r?.height) {
+    window.api.resizeWindow(
+      Math.round(r.width * 0.5),
+      Math.round(r.height * 0.5),
+    );
+  } else {
+    const hint = engine.getCanvasHint();
+    if (hint)
+      window.api.resizeWindow(
+        Math.round(hint.w * 0.5),
+        Math.round(hint.h * 0.5),
+      );
+  }
+}
+
 function galleryNext() {
   const list = enabledList();
   if (!list.length) return;
@@ -117,8 +163,17 @@ async function switchSketch(index) {
   await engine.loadSketch(newSketch ?? eq, { clearParams: true });
 
   const hint = engine.getCanvasHint();
-  if (hint)
+  if (hint) {
     window.api.resizeWindow(Math.round(hint.w * 0.5), Math.round(hint.h * 0.5));
+    // a new sketch's canvas hint redefines the render size; keep the source of
+    // truth in sync and reflect it in an open settings window
+    currentRendering = {
+      ...(currentRendering ?? {}),
+      width: hint.w,
+      height: hint.h,
+    };
+    window.api.setSettingsRendering(currentRendering);
+  }
 
   sketchPath = newPath;
   window.api.setWatchSketch(newPath);
@@ -164,6 +219,18 @@ async function main() {
 
   window.api.onSettingsUpdate((_e, obj) => engine.updateParams(obj));
 
+  // settings "load" button hands us a file path; parse it the same way as a
+  // drop and run it through the shared applyPreset
+  window.api.onApplyPresetPath(async (_e, filePath) => {
+    const result = await window.api.openPath(filePath);
+    if (result.type === 'preset') {
+      applyPreset(result);
+    } else if (result.type === 'error') {
+      errorBar.setMessage(result.message);
+      errorBar.show();
+    }
+  });
+
   const { audioPath, initialParams } = window.args;
 
   if (galleryPaths?.length) {
@@ -196,6 +263,13 @@ async function main() {
       Math.round(initialHint.w * 0.5),
       Math.round(initialHint.h * 0.5),
     );
+
+  // complete the rendering state now that the canvas hint is known; any values
+  // already supplied (CLI preset, return-from-render) win over the defaults
+  currentRendering = {
+    ...buildDefaultRendering(),
+    ...(currentRendering ?? {}),
+  };
 
   window.api.pushSettingsDefs({
     ...engine.getParamsDefinitions(),
@@ -333,6 +407,8 @@ async function main() {
     applySketchResult(evt.detail),
   );
 
+  controls.addEventListener('open-settings', () => openSettings());
+
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', async (e) => {
     e.preventDefault();
@@ -346,25 +422,7 @@ async function main() {
     } else if (result.type === 'audio') {
       await engine.loadAudio(result.path);
     } else if (result.type === 'preset') {
-      engine.updateParams(result.params);
-      const r = result.rendering;
-      if (r) {
-        currentRendering = { ...(currentRendering ?? {}), ...r };
-        window.api.setSettingsRendering(currentRendering);
-      }
-      if (r?.width && r?.height) {
-        window.api.resizeWindow(
-          Math.round(r.width * 0.5),
-          Math.round(r.height * 0.5),
-        );
-      } else {
-        const hint = engine.getCanvasHint();
-        if (hint)
-          window.api.resizeWindow(
-            Math.round(hint.w * 0.5),
-            Math.round(hint.h * 0.5),
-          );
-      }
+      applyPreset(result);
     } else if (result.type === 'error') {
       errorBar.setMessage(result.message);
       errorBar.show();

@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { fromNested } from './components/engine/preset.js';
 
 function parseTimestamp(str) {
   const parts = str.split(':').map(Number);
@@ -152,10 +153,11 @@ export function parseArgs(rawArgv) {
     if (typeof preset !== 'object' || Array.isArray(preset))
       throw new Error(`preset must be a JSON object: ${source}`);
     if ('params' in preset || 'rendering' in preset) {
-      if (preset.params) Object.assign(initialParams, preset.params);
+      if (preset.params)
+        Object.assign(initialParams, fromNested(preset.params));
       if (preset.rendering) Object.assign(initialRendering, preset.rendering);
     } else {
-      Object.assign(initialParams, preset);
+      Object.assign(initialParams, fromNested(preset));
     }
   }
 
