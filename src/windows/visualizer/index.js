@@ -17,6 +17,11 @@ function extractZipSketch(zipPath, destDir) {
   return fs.existsSync(entry) ? entry : null;
 }
 
+function sketchDisplayName(jsPath) {
+  const base = path.basename(jsPath, '.js');
+  return base === 'sketch' ? path.basename(path.dirname(jsPath)) : base;
+}
+
 function findPreviewFile(dir) {
   for (const ext of ['png', 'jpg']) {
     const p = path.join(dir, `preview.${ext}`);
@@ -342,7 +347,7 @@ export function runVisualizer(args) {
         galleryPreviews,
       };
     } else {
-      displayName = path.basename(picked, '.js');
+      displayName = sketchDisplayName(picked);
       args.sketchSourcePath = null;
       args.sketchDisplayName = null;
       args.galleryDir = null;
@@ -421,7 +426,7 @@ export function runVisualizer(args) {
       return {
         type: 'sketch',
         path: droppedPath,
-        displayName: path.basename(droppedPath, '.js'),
+        displayName: sketchDisplayName(droppedPath),
       };
     }
 

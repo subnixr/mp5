@@ -80,7 +80,7 @@ document
     const audioBase = currentDefs.audioBase ?? null;
     const ext = renderPanel.getFormat();
     const parts = [sketchName, audioBase].filter(Boolean);
-    const base = parts.length ? parts.join(' - ') + ' - ' : '';
+    const base = parts.length ? parts.join(' - ') + ' ' : '';
     const defaultName = `${base}${rv.width}x${rv.height}@${rv.fps}.${ext}`;
 
     const output = await window.api.browseOutput(defaultName);
