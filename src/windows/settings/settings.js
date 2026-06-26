@@ -10,13 +10,23 @@ const FORMAT_PRESETS = {
 
 const MIC_DEFAULT_LENGTH = '10';
 
-function parseTimestamp(str) {
-  const parts = str.trim().split(':').map(Number);
-  if (parts.length > 3 || parts.some(isNaN)) return null;
+function parseTimecode(str) {
+  str = str.trim();
+  const negative = str.startsWith('-');
+  if (negative) str = str.slice(1);
+  const parts = str.split(':').map(Number);
+  if (parts.length > 3 || parts.some((p) => isNaN(p) || p < 0)) return null;
   const [a, b, c] = parts;
-  if (parts.length === 1) return a >= 0 ? a : null;
-  if (parts.length === 2) return b >= 0 && b < 60 ? a * 60 + b : null;
-  return b >= 0 && b < 60 && c >= 0 && c < 60 ? a * 3600 + b * 60 + c : null;
+  let seconds;
+  if (parts.length === 1) seconds = a;
+  else if (parts.length === 2) {
+    if (b >= 60) return null;
+    seconds = a * 60 + b;
+  } else {
+    if (b >= 60 || c >= 60) return null;
+    seconds = a * 3600 + b * 60 + c;
+  }
+  return negative ? -seconds : seconds;
 }
 
 let currentDefs = window.api.definitions ?? { groups: [], fields: [] };
@@ -86,8 +96,8 @@ document
     const output = await window.api.browseOutput(defaultName);
     if (!output) return;
 
-    const startTime = rv.skip ? (parseTimestamp(rv.skip) ?? 0) : 0;
-    const length = rv.length ? parseTimestamp(rv.length) : null;
+    const startTime = rv.skip ? (parseTimecode(rv.skip) ?? 0) : 0;
+    const length = rv.length ? parseTimecode(rv.length) : null;
 
     await window.api.triggerRender({
       params: panel.getValues(),
@@ -214,10 +224,10 @@ function RenderingPanel(elem) {
     const w = widthCtrl.getValue() || '?';
     const h = heightCtrl.getValue() || '?';
     const fps = fpsCtrl.getValue() || 60;
-    const skipStr = skipCtrl.getValue().trim();
-    const lenStr = lengthCtrl.getValue().trim();
-    const skip = skipStr ? parseTimestamp(skipStr) : null;
-    const length = lenStr ? parseTimestamp(lenStr) : null;
+    const skipStr = skipInput.value.trim();
+    const lenStr = lengthInput.value.trim();
+    const skip = skipStr ? parseTimecode(skipStr) : null;
+    const length = lenStr ? parseTimecode(lenStr) : null;
     const audio = currentDefs.audioBase ?? null;
     ffmpegComp.updateFixed({ w, h, fps, audio, skip, length, output: '' });
   }

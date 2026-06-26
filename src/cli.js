@@ -2,13 +2,23 @@ import path from 'path';
 import fs from 'fs';
 import { fromNested } from './components/engine/preset.js';
 
-function parseTimestamp(str) {
+function parseTimecode(str) {
+  str = str.trim();
+  const negative = str.startsWith('-');
+  if (negative) str = str.slice(1);
   const parts = str.split(':').map(Number);
-  if (parts.length > 3 || parts.some(isNaN)) return null;
+  if (parts.length > 3 || parts.some((p) => isNaN(p) || p < 0)) return null;
   const [a, b, c] = parts;
-  if (parts.length === 1) return a >= 0 ? a : null;
-  if (parts.length === 2) return b >= 0 && b < 60 ? a * 60 + b : null;
-  return b >= 0 && b < 60 && c >= 0 && c < 60 ? a * 3600 + b * 60 + c : null;
+  let seconds;
+  if (parts.length === 1) seconds = a;
+  else if (parts.length === 2) {
+    if (b >= 60) return null;
+    seconds = a * 60 + b;
+  } else {
+    if (b >= 60 || c >= 60) return null;
+    seconds = a * 3600 + b * 60 + c;
+  }
+  return negative ? -seconds : seconds;
 }
 
 const AUDIO_EXTS = new Set(['.mp3', '.ogg', '.wav', '.aac', '.flac', '.m4a']);
@@ -21,7 +31,7 @@ export function showHelp() {
   console.log(`Usage:
   mp5 [SKETCH] [-f] [-p FILE] [-P JSON]
   mp5 [SKETCH] <AUDIO> [-f] [-l] [-p FILE] [-P JSON]
-  mp5 <SKETCH> [AUDIO] -o <OUTPUT> [-S [[HH:]MM:]SS[.mmm]] [-L [[HH:]MM:]SS[.mmm]] [-F FPS] [-g WxH] [-p FILE] [-P JSON]
+  mp5 <SKETCH> [AUDIO] -o <OUTPUT> [-S [-][[HH:]MM:]SS[.mmm]] [-L [-][[HH:]MM:]SS[.mmm]] [-F FPS] [-g WxH] [-p FILE] [-P JSON]
 
 Arguments:
   SKETCH       Path to sketch .js or .zip file, or directory (gallery mode)
@@ -30,8 +40,8 @@ Arguments:
 Options:
   -f               Start in fullscreen (preview mode only)
   -l               Start in loop mode (only available with AUDIO)
-  -S [[HH:]MM:]SS[.mmm]  Animation window start time (render mode only; default: 0)
-  -L [[HH:]MM:]SS[.mmm]  Animation window length (render mode only; required if no AUDIO)
+  -S [-][[HH:]MM:]SS[.mmm]  Animation window start time (render mode only; default: 0)
+  -L [-][[HH:]MM:]SS[.mmm]  Animation window length (render mode only; required if no AUDIO)
   -o OUTPUT        Render to OUTPUT file (requires AUDIO or -L)
   -F FPS           Frame rate for render mode (default: ${FRAME_RATE})
   -g WxH           Output resolution (default: ${DEFAULT_WIDTH}x${DEFAULT_HEIGHT})
@@ -137,7 +147,7 @@ export function parseArgs(rawArgv) {
     throw new Error('-S is only valid in render mode (requires -o OUTPUT)');
   }
   if (raw.output && !raw.audio && !raw.length) {
-    throw new Error('render mode without AUDIO requires -L [[HH:]MM:]SS[.mmm]');
+    throw new Error('render mode without AUDIO requires -L [-][[HH:]MM:]SS[.mmm]');
   }
 
   if (raw.sketch) {
@@ -188,15 +198,15 @@ export function parseArgs(rawArgv) {
     }
   }
 
-  const d = raw.length != null ? parseTimestamp(raw.length) : null;
+  const d = raw.length != null ? parseTimecode(raw.length) : null;
   if (raw.length != null && d == null)
     throw new Error(
-      `invalid time '${raw.length}' for -L (expected [[HH:]MM:]SS[.mmm])`,
+      `invalid time '${raw.length}' for -L (expected [-][[HH:]MM:]SS[.mmm])`,
     );
-  const s = raw.start != null ? parseTimestamp(raw.start) : null;
+  const s = raw.start != null ? parseTimecode(raw.start) : null;
   if (raw.start != null && s == null)
     throw new Error(
-      `invalid time '${raw.start}' for -S (expected [[HH:]MM:]SS[.mmm])`,
+      `invalid time '${raw.start}' for -S (expected [-][[HH:]MM:]SS[.mmm])`,
     );
 
   return {
