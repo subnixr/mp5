@@ -78,6 +78,8 @@ The controls bar appears at the bottom of the window. It auto-hides after 3 seco
 | `Ctrl+Space`, `Right-click` | Pin / unpin controls                               |
 | `Tab / Shift+Tab`           | Next / previous sketch (gallery mode)              |
 | `Ctrl+R`                    | Reload window                                      |
+| `F10`                       | Open gallery window                                |
+| `F11`                       | Toggle fullscreen                                  |
 | `F12`                       | Open settings window                               |
 
 ---

@@ -59,6 +59,8 @@ Global Mouse/Keyboard shortcuts (preview mode):
   Tab / Shift+Tab           Next/previous sketch (gallery mode)
   Ctrl+Space, RightClick    Pin/unpin controls
   Ctrl+R                    Reload window
+  F10                       Open gallery window
+  F11                       Toggle fullscreen
   F12                       Open settings window
 
 Environment variables:

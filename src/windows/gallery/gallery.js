@@ -46,24 +46,21 @@ function GalleryPanel(elem) {
   const controls = document.createElement('div');
   controls.className = 'gallery-controls';
 
+  const autoplayLabel = Input.Label(document.createElement('span'));
+  autoplayLabel.textContent = 'Autoplay';
+  controls.appendChild(autoplayLabel);
+
+  const autoplayCtrl = Input.Number({ key: 'autoplay', min: 0, step: 1, value: 0, unit: 's' });
+  autoplayCtrl.addEventListener('change', (evt) =>
+    window.api.updateGallerySettings({ autoplay: evt.detail }),
+  );
+  controls.appendChild(autoplayCtrl);
+
   const shuffleField = Input.Field(
     { key: 'shuffle', label: 'Shuffle', type: 'checkbox', value: false },
     (_key, v) => window.api.updateGallerySettings({ shuffle: v }),
   );
   controls.appendChild(shuffleField);
-
-  const autoplayField = Input.Field(
-    {
-      key: 'autoplay',
-      label: 'Autoplay (s)',
-      type: 'number',
-      min: 0,
-      step: 1,
-      value: 0,
-    },
-    (_key, v) => window.api.updateGallerySettings({ autoplay: v }),
-  );
-  controls.appendChild(autoplayField);
 
   elem.appendChild(controls);
 
@@ -77,7 +74,7 @@ function GalleryPanel(elem) {
 
   elem.applyState = (state) => {
     shuffleField.setValue(state.shuffle ?? false);
-    autoplayField.setValue(state.autoplay ?? 0);
+    autoplayCtrl.setValue(state.autoplay ?? 0);
 
     const enabledSet = new Set(state.enabledPaths ?? state.paths ?? []);
     grid.replaceChildren();

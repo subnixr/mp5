@@ -170,10 +170,19 @@ export function runVisualizer(args) {
   let galleryWin = null;
   let lastSketchDir = null;
   let lastAudioDir = null;
+  let lastSettingsDefs = null;
+
+  const registerChildShortcuts = (childWin) => {
+    childWin.webContents.on('before-input-event', (_event, input) => {
+      if (input.type !== 'keyDown') return;
+      if (input.code === 'F10' && args.galleryDir) onOpenGallery();
+      if (input.code === 'F12') openSettings(null);
+    });
+  };
 
   const onOpenGallery = () => {
     if (galleryWin && !galleryWin.isDestroyed()) {
-      galleryWin.focus();
+      galleryWin.close();
       return;
     }
     galleryWin = openGalleryWindow(win);
@@ -184,13 +193,18 @@ export function runVisualizer(args) {
     galleryWin.on('closed', () => {
       galleryWin = null;
     });
+    registerChildShortcuts(galleryWin);
   };
 
   ipcMain.on('open-gallery', onOpenGallery);
 
-  const onOpenSettings = (_e, defs) => {
+  const openSettings = (defs) => {
+    if (defs) lastSettingsDefs = defs;
+    const effectiveDefs = defs ?? lastSettingsDefs;
+    if (!effectiveDefs) return;
+
     if (settingsWin && !settingsWin.isDestroyed()) {
-      settingsWin.focus();
+      settingsWin.close();
       return;
     }
     const audioBase = args.audioPath
@@ -198,10 +212,10 @@ export function runVisualizer(args) {
       : null;
     settingsWin = openSettingsWindow(
       {
-        ...defs,
+        ...effectiveDefs,
         audioBase,
         initialRendering:
-          defs.initialRendering ?? args.initialRendering ?? null,
+          effectiveDefs.initialRendering ?? args.initialRendering ?? null,
       },
       win,
     );
@@ -212,7 +226,10 @@ export function runVisualizer(args) {
     settingsWin.on('closed', () => {
       settingsWin = null;
     });
+    registerChildShortcuts(settingsWin);
   };
+
+  const onOpenSettings = (_e, defs) => openSettings(defs);
 
   ipcMain.on('open-settings', onOpenSettings);
 
@@ -632,12 +649,20 @@ export function runVisualizer(args) {
     audioWatcher?.close();
   });
 
-  // reload shortcut
+  // keyboard shortcuts
   win.webContents.on('before-input-event', (_event, input) => {
     if (input.type !== 'keyDown') return;
 
     if (input.code === 'KeyR' && input.control) {
       if (!win.isDestroyed()) win.webContents.reload();
+    }
+
+    if (input.code === 'F10' && args.galleryDir) {
+      onOpenGallery();
+    }
+
+    if (input.code === 'F11') {
+      onToggleFullscreen();
     }
   });
 
