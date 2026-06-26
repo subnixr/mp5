@@ -454,6 +454,7 @@ async function main() {
       galleryPaths: galleryPaths ?? null,
       galleryNames: galleryNames ?? null,
       canvasHint: engine.getCanvasHint(),
+      audioDuration: engine.getDuration(),
       initialRendering: currentRendering,
     });
   }

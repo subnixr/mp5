@@ -16,12 +16,14 @@ const quitOnFinish = Field({
   key: 'quitOnFinish',
   label: 'Quit on finish',
   value: false,
+  checkboxLeft: true,
 });
 const openFolderOnFinish = Field({
   type: 'checkbox',
   key: 'openFolderOnFinish',
   label: 'Open folder on finish',
   value: false,
+  checkboxLeft: true,
 });
 renderOpts.appendChild(quitOnFinish);
 renderOpts.appendChild(openFolderOnFinish);

@@ -129,19 +129,20 @@ function RenderingPanel(elem) {
     return wrap;
   }
 
-  const widthCtrl = Input.Number({ value: 1920, min: 1 });
-  const heightCtrl = Input.Number({ value: 1080, min: 1 });
-  const fpsCtrl = Input.Number({ value: 60, min: 1, max: 120 });
+  const widthCtrl = Input.Number({ value: 1920, min: 1, unit: 'px' });
+  const heightCtrl = Input.Number({ value: 1080, min: 1, unit: 'px' });
+  const fpsCtrl = Input.Number({ value: 60, min: 1, max: 120, unit: 'fps' });
 
-  const skipCtrl = Input.Text({ value: '' });
+  const getDuration = () => currentDefs.audioDuration ?? 0;
+  const skipCtrl = Input.Time({ value: '', getDuration });
   const skipInput = skipCtrl.querySelector('input');
-  skipInput.placeholder = '[[HH:]MM:]SS[.mmm]';
-  skipInput.spellcheck = false;
 
-  const lengthCtrl = Input.Text({ value: isMic ? MIC_DEFAULT_LENGTH : '' });
+  const lengthCtrl = Input.Time({
+    value: isMic ? MIC_DEFAULT_LENGTH : '',
+    getDuration,
+    seek: false,
+  });
   const lengthInput = lengthCtrl.querySelector('input');
-  lengthInput.placeholder = '[[HH:]MM:]SS[.mmm]';
-  lengthInput.spellcheck = false;
 
   const formatCtrl = Input.Select({
     value: 'mov',
@@ -189,15 +190,18 @@ function RenderingPanel(elem) {
   row2.appendChild(makeField('Format', formatCtrl));
 
   const row3 = document.createElement('div');
-  row3.className = 'rp-row rp-row-2';
+  row3.className = 'rp-row';
   row3.appendChild(makeField('Skip', skipCtrl));
-  row3.appendChild(makeField('Length', lengthCtrl));
+
+  const row4 = document.createElement('div');
+  row4.className = 'rp-row';
+  row4.appendChild(makeField('Length', lengthCtrl));
 
   const group = Input.Group({
     title: 'rendering',
     open: true,
     noToggle: true,
-    children: [row1, row2, row3, ffmpegDiv],
+    children: [row1, row2, row3, row4, ffmpegDiv],
   });
   elem.appendChild(group);
 
@@ -261,8 +265,8 @@ function RenderingPanel(elem) {
       height: heightCtrl.getValue() || 1080,
       fps: fpsCtrl.getValue() || 60,
     };
-    const skip = skipCtrl.getValue().trim();
-    const len = lengthCtrl.getValue().trim();
+    const skip = skipInput.value.trim();
+    const len = lengthInput.value.trim();
     if (skip) vals.skip = skip;
     if (len) vals.length = len;
     const extra = ffmpegExtra.value.trim();

@@ -162,6 +162,18 @@ export function Number(field) {
     }
   });
 
+  const nudge = (delta) => {
+    const v = clamp(globalThis.Number(input.value) + delta);
+    input.value = fmt(v);
+    lastValid = input.value;
+    emit(container, v);
+  };
+
+  input.addEventListener('keydown', (evt) => {
+    if (evt.key === 'ArrowUp') { evt.preventDefault(); nudge(+step); }
+    else if (evt.key === 'ArrowDown') { evt.preventDefault(); nudge(-step); }
+  });
+
   container.appendChild(input);
 
   if (field.unit != null) {
@@ -169,13 +181,6 @@ export function Number(field) {
     const unitBox = document.createElement('div');
     unitBox.className = 'unit-box';
     unitBox.textContent = field.unit;
-
-    const nudge = (delta) => {
-      const v = clamp(globalThis.Number(input.value) + delta);
-      input.value = fmt(v);
-      lastValid = input.value;
-      emit(container, v);
-    };
 
     unitBox.addEventListener('click', (evt) => {
       evt.preventDefault();
@@ -782,6 +787,7 @@ function createControl(def) {
   if (def.type === 'file') return File(def);
   if (def.type === 'image') return Image(def);
   if (def.type === 'textarea') return Textarea(def);
+  if (def.type === 'time') return Time(def);
   if (def.type === 'repeater') return Repeater(def);
   if (def.type === 'combo') return Combo(def);
   if (def.type === 'grid') return Grid(def);
@@ -840,7 +846,10 @@ export function Field(def, onChange) {
     if (def.label !== false) {
       const span = Label(document.createElement('span'));
       span.textContent = def.label ?? def.key;
-      if (def.type === 'checkbox') {
+      if (def.type === 'checkbox' && !def.checkboxLeft) {
+        wrapper.appendChild(span);
+        wrapper.appendChild(control);
+      } else if (def.type === 'checkbox') {
         wrapper.appendChild(control);
         wrapper.appendChild(span);
       } else {
@@ -925,4 +934,215 @@ export function Group(def, register = null, depth = 0) {
   if (def.disabledValue) details.style.display = 'none';
 
   return details;
+}
+
+function positionPopup(anchor, popup) {
+  const rect = anchor.getBoundingClientRect();
+  const popupHeight = popup.offsetHeight;
+  const goDown = (window.innerHeight - rect.bottom) >= popupHeight;
+  popup.style.position = 'fixed';
+  popup.style.width = rect.width + 'px';
+  popup.style.left = rect.left + 'px';
+  if (goDown) {
+    popup.style.top = rect.bottom + 'px';
+    popup.style.bottom = '';
+  } else {
+    popup.style.top = '';
+    popup.style.bottom = (window.innerHeight - rect.top) + 'px';
+  }
+  popup.dataset.popupDir = goDown ? 'down' : 'up';
+}
+
+function parseTimecodeStr(str) {
+  str = str.trim();
+  const neg = str.startsWith('-');
+  if (neg) str = str.slice(1);
+  const parts = str.split(':').map(globalThis.Number);
+  if (parts.length > 3 || parts.some((p) => isNaN(p) || p < 0)) return null;
+  const [a, b, c] = parts;
+  let s;
+  if (parts.length === 1) s = a;
+  else if (parts.length === 2) {
+    if (b >= 60) return null;
+    s = a * 60 + b;
+  } else {
+    if (b >= 60 || c >= 60) return null;
+    s = a * 3600 + b * 60 + c;
+  }
+  return neg ? -s : s;
+}
+
+function fmtSecs(s) {
+  const abs = Math.abs(s);
+  const str = abs % 1 === 0 ? String(abs) : parseFloat(abs.toFixed(3)).toString();
+  return s < 0 ? '-' + str : str;
+}
+
+function fmtTimecode(s) {
+  const neg = s < 0;
+  const abs = Math.abs(s);
+  const ms = Math.round((abs % 1) * 1000);
+  const totalSecs = Math.floor(abs);
+  const secs = totalSecs % 60;
+  const mins = Math.floor(totalSecs / 60) % 60;
+  const hours = Math.floor(totalSecs / 3600);
+  const msSuffix = ms > 0 ? '.' + String(ms).padStart(3, '0').replace(/0+$/, '') : '';
+  const secStr = String(secs).padStart(2, '0') + msSuffix;
+  const result = hours > 0
+    ? `${hours}:${String(mins).padStart(2, '0')}:${secStr}`
+    : `${mins}:${secStr}`;
+  return neg ? '-' + result : result;
+}
+
+export function Time(field) {
+  const fmt = field.seconds ? fmtSecs : fmtTimecode;
+
+  const container = document.createElement('div');
+  container.className = 'control has-unit';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = field.value ?? '';
+  input.placeholder = field.seconds ? '[-]seconds' : '[-][[HH:]MM:]SS[.mmm]';
+  input.spellcheck = false;
+  input.addEventListener('change', (evt) => {
+    evt.stopPropagation();
+  });
+
+  const unitBox = document.createElement('div');
+  unitBox.className = 'unit-box';
+  unitBox.textContent = 'time';
+  unitBox.tabIndex = -1;
+  unitBox.style.cursor = 'default';
+
+  const popup = document.createElement('div');
+  popup.className = 'time-popup';
+  popup.hidden = true;
+
+  const popupRow = document.createElement('div');
+  popupRow.className = 'time-popup-row';
+
+  const signBtn = document.createElement('button');
+  signBtn.className = 'time-sign';
+  signBtn.type = 'button';
+  signBtn.textContent = '+';
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.className = 'time-slider';
+  slider.min = 0;
+  slider.step = 'any';
+  slider.value = 0;
+  slider.max = 0;
+
+  popupRow.appendChild(signBtn);
+  popupRow.appendChild(slider);
+  popup.appendChild(popupRow);
+
+  let sign = '+';
+  let suppressSync = false;
+
+  // Thumb represents track position in both modes:
+  //   + → output = trackPos (seconds from start)
+  //   - → output = trackPos - duration (seconds before end, negative)
+  function getOutputValue() {
+    const trackPos = parseFloat(slider.value);
+    const dur = parseFloat(slider.max) || 0;
+    return sign === '-' ? trackPos - dur : trackPos;
+  }
+
+  function updateGradient() {
+    const max = parseFloat(slider.max) || 0;
+    const pct = max > 0 ? (parseFloat(slider.value) / max) * 100 : 0;
+    const a = sign === '+' ? 0 : pct;
+    const b = sign === '+' ? pct : 100;
+    slider.style.setProperty('--track-bg', `linear-gradient(to right, var(--color-field) ${a}%, var(--color-fg) ${a}%, var(--color-fg) ${b}%, var(--color-field) ${b}%)`);
+  }
+
+  function syncSliderFromInput() {
+    const parsed = parseTimecodeStr(input.value);
+    if (parsed == null) return;
+    sign = parsed < 0 ? '-' : '+';
+    signBtn.textContent = sign;
+    const dur = parseFloat(slider.max) || 0;
+    // convert raw value to track position
+    const trackPos = parsed < 0 ? dur + parsed : parsed;
+    slider.value = Math.max(0, Math.min(trackPos, dur));
+    updateGradient();
+  }
+
+  function applyPopupChange(formatted) {
+    input.value = formatted;
+    updateGradient();
+    const parsed = parseTimecodeStr(formatted);
+    if (parsed != null) emit(container, parsed);
+    suppressSync = true;
+    input.dispatchEvent(new Event('input'));
+    suppressSync = false;
+  }
+
+  signBtn.addEventListener('click', () => {
+    sign = sign === '+' ? '-' : '+';
+    signBtn.textContent = sign;
+    applyPopupChange(fmt(getOutputValue()));
+  });
+
+  slider.addEventListener('input', () => {
+    applyPopupChange(fmt(getOutputValue()));
+  });
+
+  input.addEventListener('input', () => {
+    if (!suppressSync && !popup.hidden) syncSliderFromInput();
+    if (!suppressSync) {
+      const parsed = parseTimecodeStr(input.value);
+      if (parsed != null) emit(container, parsed);
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    const parsed = parseTimecodeStr(input.value);
+    if (parsed != null) input.value = fmt(parsed);
+  });
+
+  function closePopup() {
+    popup.hidden = true;
+  }
+
+  function openPopup() {
+    if (field.seek === false) return;
+    slider.max = field.getDuration ? (field.getDuration() || 0) : (field.max ?? 3600);
+    if (field.getDuration && slider.max == 0) return;
+    syncSliderFromInput();
+    popup.hidden = false;
+    positionPopup(container, popup);
+  }
+
+  popup.addEventListener('mousedown', (e) => {
+    if (e.target !== slider && e.target !== signBtn) e.preventDefault();
+  });
+
+  input.addEventListener('focus', () => { if (popup.hidden) openPopup(); });
+
+  container.addEventListener('keydown', (evt) => {
+    if (evt.key === 'Escape' && !popup.hidden) { evt.stopPropagation(); closePopup(); }
+  });
+
+  container.addEventListener('focusout', () => {
+    requestAnimationFrame(() => {
+      if (!popup.hidden && !container.contains(document.activeElement)) closePopup();
+    });
+  });
+
+  container.appendChild(input);
+  container.appendChild(unitBox);
+  container.appendChild(popup);
+
+  container.getValue = () => parseTimecodeStr(input.value) ?? null;
+  container.setValue = (v) => {
+    input.value = typeof v === 'number' ? fmt(v) : (v ?? '');
+    syncSliderFromInput();
+    emit(container, container.getValue());
+  };
+
+  return container;
 }

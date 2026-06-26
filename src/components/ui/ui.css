@@ -48,6 +48,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1;
 }
 
 /* --- Collapsible label header --- */
@@ -135,7 +136,7 @@
 .repeater-row {
   display: flex;
   gap: 0.4rem;
-  align-items: flex-end;
+  align-items: stretch;
 }
 
 .repeater-row .input,
@@ -143,11 +144,6 @@
 .repeater-row .grid-fields {
   flex: 1;
   min-width: 0;
-}
-
-.repeater-row:has(.grid-fields),
-.repeater-row:has(.combo) {
-  align-items: stretch;
 }
 
 .repeater-remove {
@@ -173,11 +169,6 @@
   outline-offset: -1px;
 }
 
-.repeater-row:has(.grid-fields) .repeater-remove {
-  margin-top: 2.7rem;
-  height: auto;
-}
-
 .repeater-handle {
   flex: 0 0 2rem;
   width: 2rem;
@@ -189,12 +180,9 @@
   color: var(--color-border);
 }
 
-.repeater-row:has(.grid-fields) .repeater-handle {
-  margin-top: 2.7rem;
-  height: auto;
-}
-
-.repeater-row:has(.combo) .repeater-handle {
+.repeater-row:has(.input .label) .repeater-remove,
+.repeater-row:has(.input .label) .repeater-handle {
+  margin-top: 2rem;
   height: auto;
 }
 
@@ -293,15 +281,14 @@
   outline: none;
 }
 
-.input .control {
+.control {
   position: relative;
   display: flex;
 }
 
-.input input,
-.input select,
-.input textarea {
-  width: 100%;
+.control input:not([type='checkbox']),
+.control select,
+.control textarea {
   min-width: 0;
   height: 3rem;
   background: var(--color-field);
@@ -317,15 +304,21 @@
   -webkit-appearance: none;
 }
 
-.input textarea {
+.control textarea {
   height: 6rem;
   resize: vertical;
   padding: 0.4rem 0.8rem;
 }
 
-.input input:focus,
-.input textarea:focus {
+.control input:not([type='checkbox']):focus,
+.control textarea:focus {
   border-color: var(--color-select);
+}
+
+.input .control input:not([type='checkbox']),
+.input .control select,
+.input .control textarea {
+  width: 100%;
 }
 
 .control.select:focus-within select {
@@ -342,6 +335,13 @@
 
 .input:has(input[type='checkbox']) .control {
   align-items: center;
+}
+
+.input:has(input[type='checkbox']) .label {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  height: 2rem;
 }
 
 .input input[type='checkbox'] {
@@ -394,8 +394,10 @@
   white-space: nowrap;
 }
 
-.control.has-unit:focus-within .unit-box {
+.control.has-unit:focus-within .unit-box,
+.control .unit-box:focus-visible {
   border-color: var(--color-select);
+  outline: none;
 }
 
 /* --- Select indicator --- */
@@ -650,4 +652,77 @@
 .control.color.has-alpha:focus-within
   input[type='range']::-webkit-slider-thumb {
   background: var(--color-select);
+}
+
+/* --- Time input popup --- */
+
+.time-popup {
+  position: fixed;
+  z-index: 1000;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  box-sizing: border-box;
+}
+
+.time-popup-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  height: 3rem;
+}
+
+.time-sign {
+  flex: 0 0 3rem;
+  min-height: 3rem;
+  margin: 0;
+  padding: 0;
+  background: var(--color-fg);
+  border: 1px solid var(--color-border);
+  color: var(--color-bg);
+  font-family: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.time-sign:focus {
+  outline: none;
+}
+
+.time-sign:focus-visible {
+  background: var(--color-select);
+  border-color: var(--color-select);
+  color: var(--color-bg);
+}
+
+/* Override .control input:not([type='checkbox']) and .control.has-unit input interference */
+.control.has-unit .time-slider {
+  border: none;
+  padding: 0;
+  height: 100%;
+  background: transparent;
+}
+
+.time-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 100%;
+  outline: none;
+  cursor: pointer;
+  background: transparent;
+}
+
+.time-slider::-webkit-slider-runnable-track {
+  height: 0.8rem;
+  background: var(--track-bg, var(--color-field));
+}
+
+.time-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  height: 100%;
 }
