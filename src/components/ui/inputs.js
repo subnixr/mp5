@@ -208,6 +208,8 @@ export function Text(field) {
   input.value = field.value ?? '';
   input.addEventListener('change', (evt) => {
     evt.stopPropagation();
+  });
+  input.addEventListener('input', () => {
     emit(container, input.value);
   });
   container.appendChild(input);

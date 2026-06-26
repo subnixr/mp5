@@ -340,6 +340,10 @@
   gap: 2rem;
 }
 
+.input:has(input[type='checkbox']) .control {
+  align-items: center;
+}
+
 .input input[type='checkbox'] {
   width: 2rem;
   height: 2rem;

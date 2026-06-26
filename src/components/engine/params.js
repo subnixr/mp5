@@ -162,7 +162,7 @@ export function createParams() {
   }
 
   function buildComboDef(key) {
-    const { label, subKeys } = combos.get(key);
+    const { label, subKeys, disabled } = combos.get(key);
     const prefix = key + '.';
     const items = subKeys
       .map((sk) => {
@@ -181,11 +181,12 @@ export function createParams() {
       })
       .filter(Boolean);
     applyFlexDefaults(items);
-    return { key, label, type: 'combo', items };
+    const disabledDef = resolveDisabled(disabled, registry);
+    return { key, label, type: 'combo', items, ...(disabledDef ?? {}) };
   }
 
   function buildGridDef(key) {
-    const { columns, subKeys } = grids.get(key);
+    const { columns, subKeys, disabled } = grids.get(key);
     const prefix = key + '.';
     const items = subKeys
       .map((sk) => {
@@ -202,7 +203,8 @@ export function createParams() {
         };
       })
       .filter(Boolean);
-    return { key, type: 'grid', columns, items };
+    const disabledDef = resolveDisabled(disabled, registry);
+    return { key, type: 'grid', columns, items, ...(disabledDef ?? {}) };
   }
 
   function fieldFor(key) {
@@ -367,7 +369,7 @@ export function createParams() {
     if (field._key !== key) rekeyChild(field, key);
 
     const fieldKey = field._key;
-    const { min = 0, max = null } = opts;
+    const { min = 0, max = null, label } = opts;
 
     if (fieldKey !== key) repeaterFields.add(fieldKey);
 
@@ -405,6 +407,8 @@ export function createParams() {
           columns,
           subKeys,
           gridKey: fieldKey,
+          ...(label !== undefined ? { label } : {}),
+          ...(opts.disabled !== undefined ? { disabled: opts.disabled } : {}),
         },
         subscribers: existing?.subscribers ?? new Set(),
         keyRef,
@@ -444,6 +448,7 @@ export function createParams() {
           label: comboInfo.label,
           subKeys,
           comboKey: fieldKey,
+          ...(opts.disabled !== undefined ? { disabled: opts.disabled } : {}),
         },
         subscribers: existing?.subscribers ?? new Set(),
         keyRef,
@@ -475,9 +480,17 @@ export function createParams() {
   };
 
   params.combo = function (key, label, ...paramObjs) {
+    let opts = {};
+    if (paramObjs.length > 0) {
+      const last = paramObjs[paramObjs.length - 1];
+      if (last !== null && typeof last === 'object' && !last._key && !last._isCombo && !last._isGrid) {
+        opts = last;
+        paramObjs = paramObjs.slice(0, -1);
+      }
+    }
     for (const p of paramObjs) rekeyChild(p, key);
     if (!combos.has(key)) defOrder.push({ kind: 'combo', key });
-    combos.set(key, { label, subKeys: paramObjs.map((p) => p._key) });
+    combos.set(key, { label, subKeys: paramObjs.map((p) => p._key), disabled: opts.disabled });
     for (const p of paramObjs) comboSubKeys.add(p._key);
 
     const result = { _key: key, _isCombo: true };
@@ -489,9 +502,17 @@ export function createParams() {
   };
 
   params.grid = function (key, columns, ...paramObjs) {
+    let opts = {};
+    if (paramObjs.length > 0) {
+      const last = paramObjs[paramObjs.length - 1];
+      if (last !== null && typeof last === 'object' && !last._key && !last._isCombo && !last._isGrid) {
+        opts = last;
+        paramObjs = paramObjs.slice(0, -1);
+      }
+    }
     for (const p of paramObjs) rekeyChild(p, key);
     if (!grids.has(key)) defOrder.push({ kind: 'grid', key });
-    grids.set(key, { columns, subKeys: paramObjs.map((p) => p._key) });
+    grids.set(key, { columns, subKeys: paramObjs.map((p) => p._key), disabled: opts.disabled });
     for (const p of paramObjs) gridSubKeys.add(p._key);
 
     const result = { _key: key, _isGrid: true };

@@ -5,7 +5,7 @@
   top: 0;
   right: 0;
 
-  min-width: 3rem;
+  width: 150px;
   min-height: 3rem;
   padding: 0;
 
@@ -15,9 +15,16 @@
 
 .window-size[data-display] {
   cursor: pointer;
-  max-width: 14rem;
   text-align: center;
   background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.window-size .input,
+.window-size .input input {
+  width: 150px;
 }
 
 .window-size .input input {
@@ -30,7 +37,9 @@
 
 .window-size span {
   display: none;
-  padding: 1.6rem;
+  width: 150px;
+  padding: 0 0.8rem;
+  box-sizing: border-box;
 }
 
 .window-size[data-display] span {
