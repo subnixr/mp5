@@ -118,12 +118,10 @@ function RenderingPanel(elem) {
   // from, so default the Length field to 10s the way the CLI requires -L.
   const isMic = !currentDefs.audioBase;
 
-  function makeField(labelText, control) {
+  function makeField(labelText, control, tip) {
     const wrap = document.createElement('label');
     wrap.className = 'input';
-    const lbl = document.createElement('span');
-    lbl.className = 'label';
-    lbl.textContent = labelText;
+    const lbl = Input.Label(document.createElement('span'), { label: labelText, tip });
     wrap.appendChild(lbl);
     wrap.appendChild(control);
     return wrap;
@@ -144,10 +142,7 @@ function RenderingPanel(elem) {
   });
   const lengthInput = lengthCtrl.querySelector('input');
 
-  const formatCtrl = Input.Select({
-    value: 'mov',
-    options: ['mp4', 'mov', 'webm'],
-  });
+  const formatCtrl = Input.Select({ value: 'mov', options: ['mp4', 'mov', 'webm'] });
   const formatSelect = formatCtrl.querySelector('select');
 
   const ffmpegDiv = document.createElement('div');
@@ -187,7 +182,7 @@ function RenderingPanel(elem) {
   const row2 = document.createElement('div');
   row2.className = 'rp-row rp-row-2';
   row2.appendChild(makeField('FPS', fpsCtrl));
-  row2.appendChild(makeField('Format', formatCtrl));
+  row2.appendChild(makeField('Format', formatCtrl, 'Only mov and webm support true transparency.\nDefaults to black background for mp4.'));
 
   const row3 = document.createElement('div');
   row3.className = 'rp-row';

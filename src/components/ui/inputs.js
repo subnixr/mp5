@@ -62,9 +62,73 @@ function iconSpan(id) {
   return span;
 }
 
+let _tipPopup = null;
+let _tipAnchor = null;
+
+function getTipPopup() {
+  if (!_tipPopup) {
+    _tipPopup = document.createElement('div');
+    _tipPopup.className = 'tip-popup';
+    _tipPopup.style.display = 'none';
+    document.body.appendChild(_tipPopup);
+  }
+  return _tipPopup;
+}
+
+function showTip(anchor, text) {
+  const popup = getTipPopup();
+  _tipAnchor = anchor;
+  popup.replaceChildren();
+  for (const line of text.split('\n')) {
+    const p = document.createElement('p');
+    p.textContent = line;
+    popup.appendChild(p);
+  }
+  popup.style.display = '';
+  const rect = anchor.getBoundingClientRect();
+  const popupW = popup.offsetWidth;
+  const popupH = popup.offsetHeight;
+  const iconCenterX = rect.left + rect.width / 2;
+  const left = Math.max(4, Math.min(iconCenterX - popupW / 2, window.innerWidth - popupW - 4));
+  popup.style.left = left + 'px';
+  popup.style.setProperty('--tip-arrow-x', (iconCenterX - left - 6) + 'px');
+  const goDown = window.innerHeight - rect.bottom >= popupH + 4;
+  if (goDown) {
+    popup.style.top = rect.bottom + 4 + 'px';
+    popup.style.bottom = '';
+  } else {
+    popup.style.top = '';
+    popup.style.bottom = window.innerHeight - rect.top + 4 + 'px';
+  }
+  popup.dataset.popupDir = goDown ? 'down' : 'up';
+}
+
+function hideTip(anchor) {
+  if (_tipAnchor === anchor) {
+    getTipPopup().style.display = 'none';
+    _tipAnchor = null;
+  }
+}
+
+export function Tooltip(anchor, text) {
+  anchor.addEventListener('click', (e) => {
+    e.stopPropagation();
+    _tipAnchor === anchor && _tipPopup?.style.display !== 'none' ? hideTip(anchor) : showTip(anchor, text);
+  });
+  anchor.addEventListener('mouseenter', () => showTip(anchor, text));
+  anchor.addEventListener('mouseleave', () => hideTip(anchor));
+}
+
+function makeTipIcon(tip) {
+  const icon = iconSpan('info');
+  icon.classList.add('tip-icon');
+  Tooltip(icon, tip);
+  return icon;
+}
+
 export function Label(
   elem,
-  { collapsible = false, group = false, label, open = true, onExpand } = {},
+  { collapsible = false, group = false, label, open = true, onExpand, tip } = {},
 ) {
   if (group) {
     elem.classList.add('group-title');
@@ -74,6 +138,15 @@ export function Label(
 
   if (!collapsible) {
     elem.classList.add('label');
+    if (tip != null) {
+      const textSpan = document.createElement('span');
+      if (label != null) textSpan.textContent = label;
+      elem.appendChild(textSpan);
+      elem.appendChild(makeTipIcon(tip));
+      elem.classList.add('has-tip');
+    } else {
+      if (label != null) elem.textContent = label;
+    }
     return elem;
   }
 
@@ -88,6 +161,7 @@ export function Label(
 
   elem.appendChild(span);
   elem.appendChild(chevron);
+  if (tip != null) elem.appendChild(makeTipIcon(tip));
 
   let target = null;
   let expanded = open;
@@ -548,6 +622,7 @@ export function Repeater(def) {
     collapsible: true,
     label: def.label ?? key,
     open: true,
+    tip: def.tip,
   });
 
   const body = document.createElement('div');
@@ -680,8 +755,7 @@ export function Combo(def, onSubChange) {
   container.className = 'combo';
 
   if (def.label !== false) {
-    const labelSpan = Label(document.createElement('span'));
-    labelSpan.textContent = def.label ?? def.key ?? '';
+    const labelSpan = Label(document.createElement('span'), { label: def.label ?? def.key ?? '', tip: def.tip });
     container.appendChild(labelSpan);
   }
 
@@ -844,15 +918,18 @@ export function Field(def, onChange) {
     }
 
     if (def.label !== false) {
-      const span = Label(document.createElement('span'));
-      span.textContent = def.label ?? def.key;
-      if (def.type === 'checkbox' && !def.checkboxLeft) {
-        wrapper.appendChild(span);
-        wrapper.appendChild(control);
-      } else if (def.type === 'checkbox') {
-        wrapper.appendChild(control);
-        wrapper.appendChild(span);
+      if (def.type === 'checkbox') {
+        const span = Label(document.createElement('span'), { label: def.label ?? def.key });
+        if (!def.checkboxLeft) {
+          wrapper.appendChild(span);
+          wrapper.appendChild(control);
+        } else {
+          wrapper.appendChild(control);
+          wrapper.appendChild(span);
+        }
+        if (def.tip != null) wrapper.appendChild(makeTipIcon(def.tip));
       } else {
+        const span = Label(document.createElement('span'), { label: def.label ?? def.key, tip: def.tip });
         wrapper.appendChild(span);
         wrapper.appendChild(control);
       }
@@ -912,6 +989,13 @@ export function Group(def, register = null, depth = 0) {
     }
   });
   details.appendChild(summary);
+
+  if (def.tip != null) {
+    const tipWrapper = document.createElement('div');
+    tipWrapper.className = 'group-tip';
+    tipWrapper.appendChild(makeTipIcon(def.tip));
+    details.appendChild(tipWrapper);
+  }
 
   const fieldsDiv = document.createElement('div');
   fieldsDiv.className = 'group-fields';

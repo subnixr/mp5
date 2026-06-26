@@ -70,6 +70,10 @@
   color: inherit;
 }
 
+.label-header > .tip-icon {
+  margin-left: auto;
+}
+
 .label-chevron::before {
   content: '▶';
   font-size: 0.8em;
@@ -331,6 +335,10 @@
   flex-direction: row;
   align-items: center;
   gap: 2rem;
+}
+
+.input:has(input[type='checkbox']) > .tip-icon {
+  margin-left: auto;
 }
 
 .input:has(input[type='checkbox']) .control {
@@ -725,4 +733,82 @@
   -webkit-appearance: none;
   width: 0;
   height: 100%;
+}
+
+/* --- Tip icon --- */
+
+.tip-icon {
+  flex-shrink: 0;
+  cursor: pointer;
+  color: var(--color-muted);
+  margin-left: 0.4rem;
+  width: 1em;
+  height: 1em;
+}
+
+.tip-icon:hover,
+.tip-icon:focus-visible {
+  color: var(--color-fg);
+}
+
+.label.has-tip {
+  display: flex;
+  align-items: center;
+}
+
+.label.has-tip > span:first-child {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-tip {
+  position: absolute;
+  top: -0.6em;
+  right: 0;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+}
+
+/* --- Tip popup --- */
+
+.tip-popup {
+  position: fixed;
+  z-index: 1100;
+  background: var(--color-btn);
+  border: 1px solid var(--color-border);
+  padding: 0.8rem 1rem;
+  max-width: 28rem;
+  pointer-events: none;
+}
+
+.tip-popup p {
+  margin: 0;
+  color: var(--color-hint);
+  font-size: 1.4rem;
+  line-height: 1.5;
+}
+
+.tip-popup p + p {
+  margin-top: 0.4rem;
+}
+
+.tip-popup::before {
+  content: '';
+  position: absolute;
+  left: var(--tip-arrow-x, 1rem);
+  border: 6px solid transparent;
+}
+
+[data-popup-dir='down'].tip-popup::before {
+  top: -12px;
+  border-bottom-color: var(--color-border);
+}
+
+[data-popup-dir='up'].tip-popup::before {
+  bottom: -12px;
+  border-top-color: var(--color-border);
 }

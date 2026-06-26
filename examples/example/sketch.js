@@ -49,12 +49,14 @@ export default function (p, audio, params) {
   const animation = params.group(
     'animation',
     'Animation',
+    { tip: 'Controls the overall animation response to audio.' },
     params('smoothness', 0.95, {
       type: 'number',
       label: 'Smoothness',
       min: 0,
       max: 1,
       decimals: 2,
+      tip: 'Higher = snappier, more reactive.\nLower = slower, more fluid movement.',
     }),
     params('volFloor', 0.1, {
       type: 'number',
@@ -62,6 +64,7 @@ export default function (p, audio, params) {
       min: 0,
       max: 1,
       decimals: 2,
+      tip: 'Silence below this volume level suppresses effects.',
     }),
     params('fadeInDuration', 2, {
       type: 'number',

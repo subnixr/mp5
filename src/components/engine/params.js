@@ -162,7 +162,7 @@ export function createParams() {
   }
 
   function buildComboDef(key) {
-    const { label, subKeys, disabled } = combos.get(key);
+    const { label, subKeys, disabled, tip } = combos.get(key);
     const prefix = key + '.';
     const items = subKeys
       .map((sk) => {
@@ -182,11 +182,11 @@ export function createParams() {
       .filter(Boolean);
     applyFlexDefaults(items);
     const disabledDef = resolveDisabled(disabled, registry);
-    return { key, label, type: 'combo', items, ...(disabledDef ?? {}) };
+    return { key, label, type: 'combo', items, ...(tip != null ? { tip } : {}), ...(disabledDef ?? {}) };
   }
 
   function buildGridDef(key) {
-    const { columns, subKeys, disabled } = grids.get(key);
+    const { columns, subKeys, disabled, tip } = grids.get(key);
     const prefix = key + '.';
     const items = subKeys
       .map((sk) => {
@@ -204,7 +204,7 @@ export function createParams() {
       })
       .filter(Boolean);
     const disabledDef = resolveDisabled(disabled, registry);
-    return { key, type: 'grid', columns, items, ...(disabledDef ?? {}) };
+    return { key, type: 'grid', columns, items, ...(tip != null ? { tip } : {}), ...(disabledDef ?? {}) };
   }
 
   function fieldFor(key) {
@@ -252,6 +252,7 @@ export function createParams() {
           value: elementDefault,
         },
         value: [...entry.value],
+        ...(entry.opts.tip != null ? { tip: entry.opts.tip } : {}),
         ...(disabledDef ?? {}),
       };
     }
@@ -298,6 +299,7 @@ export function createParams() {
         max,
         itemDef: { type: 'combo', label: false, items, value: elementDefault },
         value: [...entry.value],
+        ...(entry.opts.tip != null ? { tip: entry.opts.tip } : {}),
         ...(disabledDef ?? {}),
       };
     }
@@ -310,7 +312,7 @@ export function createParams() {
         disabled,
         ...itemOpts
       } = entry.opts;
-      const { type = 'text', label = key, ...rest } = itemOpts;
+      const { type = 'text', label = key, tip, ...rest } = itemOpts;
       const disabledDef = resolveDisabled(disabled, registry);
       return {
         key,
@@ -320,6 +322,7 @@ export function createParams() {
         max,
         itemDef: { type, label, value: entry.elementDefault, ...rest },
         value: [...entry.value],
+        ...(tip != null ? { tip } : {}),
         ...(disabledDef ?? {}),
       };
     }
@@ -490,7 +493,7 @@ export function createParams() {
     }
     for (const p of paramObjs) rekeyChild(p, key);
     if (!combos.has(key)) defOrder.push({ kind: 'combo', key });
-    combos.set(key, { label, subKeys: paramObjs.map((p) => p._key), disabled: opts.disabled });
+    combos.set(key, { label, subKeys: paramObjs.map((p) => p._key), disabled: opts.disabled, tip: opts.tip });
     for (const p of paramObjs) comboSubKeys.add(p._key);
 
     const result = { _key: key, _isCombo: true };
@@ -512,7 +515,7 @@ export function createParams() {
     }
     for (const p of paramObjs) rekeyChild(p, key);
     if (!grids.has(key)) defOrder.push({ kind: 'grid', key });
-    grids.set(key, { columns, subKeys: paramObjs.map((p) => p._key), disabled: opts.disabled });
+    grids.set(key, { columns, subKeys: paramObjs.map((p) => p._key), disabled: opts.disabled, tip: opts.tip });
     for (const p of paramObjs) gridSubKeys.add(p._key);
 
     const result = { _key: key, _isGrid: true };
@@ -559,6 +562,7 @@ export function createParams() {
     result[LABEL] = label;
     result[CHILDREN] = children;
     if (groupOpts.disabled != null) result._disabled = groupOpts.disabled;
+    if (groupOpts.tip != null) result._tip = groupOpts.tip;
     groups.push(result);
     return result;
   };
@@ -660,7 +664,7 @@ export function createParams() {
         }
       }
       const disabledDef = resolveDisabled(g._disabled, registry);
-      return { title: g[LABEL], items, ...(disabledDef ?? {}) };
+      return { title: g[LABEL], items, ...(g._tip != null ? { tip: g._tip } : {}), ...(disabledDef ?? {}) };
     }
 
     function collectKeys(g) {
