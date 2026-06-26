@@ -1,6 +1,7 @@
 import sheet from './engine.css' with { type: 'css' };
 import {
   computePeakGain,
+  computeFrameAt,
   createFileAudio,
   createMicAudio,
   createLiveFileAudio,
@@ -56,6 +57,7 @@ export default function Engine(elem) {
   let precomputedData = null;
   let precomputePromise = null; // pending until analysis completes
   let renderFps = null; // set for render mode; uses frame-based currentTime
+  let pausedFrame = null; // single-frame offline decode for paused seek preview
   let startTime = 0;
   let currentSketchFn = null; // stored so loadMic can reload the sketch with correct audio
   let activeAudio = null; // audio object of the current front sketch
@@ -78,6 +80,7 @@ export default function Engine(elem) {
   elem.getNormGain = () => (elem.getMode() === 'mic' ? 1 : normGain);
   elem.getAudioSource = () => audioSource;
   elem.getPrecomputedData = () => precomputedData;
+  elem.getPausedFrame = () => pausedFrame;
   elem.getSpectrum = () => activeAudio?.getSpectrum() ?? null;
   elem.getVolumeLevel = () => activeAudio?.getVolumeLevel() ?? 0;
   elem.getParams = () => activeParams?.getValues() ?? {};
@@ -168,6 +171,7 @@ export default function Engine(elem) {
           () => soundFile,
           p,
           () => normGain,
+          () => pausedFrame,
         );
       }
 
@@ -262,6 +266,7 @@ export default function Engine(elem) {
       return;
     }
 
+    pausedFrame = null;
     activeVirtualClock = null;
     resumeAudioContext();
 
@@ -367,6 +372,7 @@ export default function Engine(elem) {
   elem.play = () => {
     if (soundFile) {
       if (!soundFile.isPlaying()) {
+        pausedFrame = null;
         soundFile.play();
         startPolling();
         emitUpdate();
@@ -391,6 +397,10 @@ export default function Engine(elem) {
         soundFile.pauseTime = clamped;
         soundFile._pauseTime = clamped;
         soundFile._paused = true;
+        if (soundFile.buffer) {
+          computeFrameAt(soundFile.buffer, clamped, undefined, normGain)
+            .then((f) => { pausedFrame = f; });
+        }
       }
     } else if (activeVirtualClock) {
       activeVirtualClock.jump(t);
@@ -399,7 +409,14 @@ export default function Engine(elem) {
   };
 
   elem.pause = () => {
-    soundFile?.pause();
+    if (soundFile) {
+      const t = soundFile.currentTime();
+      soundFile.pause();
+      if (soundFile.buffer) {
+        computeFrameAt(soundFile.buffer, t, undefined, normGain)
+          .then((f) => { pausedFrame = f; });
+      }
+    }
     activeVirtualClock?.pause();
     emitUpdate();
   };

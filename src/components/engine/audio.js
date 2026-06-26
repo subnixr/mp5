@@ -281,6 +281,52 @@ function dynamicThreshold(alphaRise = 0.999, alphaFall = 0.97, kappa = 1.5) {
   };
 }
 
+export async function computeFrameAt(audioBuffer, t, bins = DEFAULT_BINS, normGain = 1) {
+  const { sampleRate, numberOfChannels, length } = audioBuffer;
+  const fftSize = bins * 2;
+  const tSample = Math.round(t * sampleRate);
+  const startSample = Math.max(0, tSample - fftSize);
+  const endSample = Math.min(length, startSample + fftSize * 2);
+  const sliceLen = endSample - startSample;
+
+  if (sliceLen < 1) return { spectrum: new Uint8Array(bins), amplitude: 0, sampleRate };
+
+  const offCtx = new OfflineAudioContext(numberOfChannels, sliceLen, sampleRate);
+  const sliceBuf = offCtx.createBuffer(numberOfChannels, sliceLen, sampleRate);
+  for (let c = 0; c < numberOfChannels; c++) {
+    sliceBuf.getChannelData(c).set(
+      audioBuffer.getChannelData(c).subarray(startSample, endSample),
+    );
+  }
+
+  const src = offCtx.createBufferSource();
+  src.buffer = sliceBuf;
+
+  const analyser = offCtx.createAnalyser();
+  analyser.fftSize = fftSize;
+  analyser.smoothingTimeConstant = 0;
+  src.connect(analyser);
+  analyser.connect(offCtx.destination);
+  src.start(0);
+
+  const captureTime = Math.max(1 / sampleRate, (tSample - startSample) / sampleRate);
+
+  let spectrum, amplitude;
+  offCtx.suspend(captureTime).then(() => {
+    const spec = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(spec);
+    spectrum = spec;
+    const time = new Float32Array(fftSize);
+    analyser.getFloatTimeDomainData(time);
+    const rms = Math.sqrt(time.reduce((s, v) => s + v * v, 0) / time.length);
+    amplitude = Math.min(1, rms * normGain);
+    offCtx.resume();
+  });
+
+  await offCtx.startRendering();
+  return { spectrum: spectrum ?? new Uint8Array(bins), amplitude: amplitude ?? 0, sampleRate };
+}
+
 export function createFileAudio(engine, getTime, isFirstFrame = null) {
   function frame() {
     const data = engine.getPrecomputedData();
@@ -360,7 +406,7 @@ export function createFileAudio(engine, getTime, isFirstFrame = null) {
 // getSoundFile: () => soundFile — getter so callers capture live reference.
 // FFT/Amplitude created lazily on first use (inside draw), after p5.sound
 // AudioWorklet is fully registered.
-export function createLiveFileAudio(getSoundFile, p, getNormGain = () => 1) {
+export function createLiveFileAudio(getSoundFile, p, getNormGain = () => 1, getPausedFrame = () => null) {
   let fft = null;
   let transientFft = null;
   let amplitude = null;
@@ -419,14 +465,26 @@ export function createLiveFileAudio(getSoundFile, p, getNormGain = () => 1) {
       return this.currentTime() * 1000;
     },
     getBand(lo, hi) {
+      const sf = getSoundFile();
+      if (sf && !sf.isPlaying()) {
+        const frame = getPausedFrame();
+        if (!frame) return 0;
+        return computeBand(frame.spectrum, lo, hi, frame.sampleRate);
+      }
       ensureAnalyzed();
       return fft.getEnergy(lo, hi) / 255;
     },
     getSpectrum() {
+      if (getSoundFile() && !getSoundFile().isPlaying()) {
+        return getPausedFrame()?.spectrum ?? null;
+      }
       ensureAnalyzed();
       return cachedSpectrum;
     },
     getVolumeLevel() {
+      if (getSoundFile() && !getSoundFile().isPlaying()) {
+        return getPausedFrame()?.amplitude ?? 0;
+      }
       init();
       return Math.min(1, amplitude.getLevel() * getNormGain());
     },
