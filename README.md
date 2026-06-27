@@ -3,7 +3,7 @@
     <h3 style="flex: 0 1 75%">Run p5.js sketches driven by audio — both live on screen and rendered to video.</h3>
 </div>
 
-MP5 is an Electron app that plays time- and audio-driven [p5.js](https://p5js.org) sketches. Point it at a sketch and:
+MP5 is an Electron app that plays time and audio-driven [p5.js](https://p5js.org) sketches. Point it at a sketch and:
 
 - **Live** — an interactive visualizer window with audio playback, frequency analysis, and a controls overlay.
 - **Render** — headless, frame-by-frame export to a video file (via ffmpeg), with optional audio and alpha channel.
