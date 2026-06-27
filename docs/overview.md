@@ -125,8 +125,8 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 | `-f`              | Start fullscreen (preview only)                                          |
 | `-l`              | Loop audio (preview only)                                                |
 | `-o OUTPUT`       | Render to output file — activates render mode                            |
-| `-S [[HH:]MM:]SS` | Animation window start time (render only; default: 0)                    |
-| `-L [[HH:]MM:]SS` | Animation window length (render only; required if no AUDIO)              |
+| `-S [-][[HH:]MM:]SS[.mmm]` | Animation window start time (render only; default: 0)                    |
+| `-L [-][[HH:]MM:]SS[.mmm]` | Animation window length (render only; required if no AUDIO)              |
 | `-F FPS`          | Render frame rate (default: 60)                                          |
 | `-g WxH`          | Output resolution (default: 1920×1080); overrides `params.canvas()` hint |
 | `-p FILE`         | Load initial params (and optionally render settings) from a JSON preset file |

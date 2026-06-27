@@ -53,7 +53,7 @@ Global Mouse/Keyboard shortcuts (preview mode):
   Space                     Play/Pause file, toggle mic input
   Return                    Toggle fullscreen
   Left/Right                Seek -10/+10 seconds
-  Home/End                  Seek to start/end (only when playing file)
+  Home/End                  Seek to start/end (file only)
   M                         Toggle mute
   Up/Down, WheelScroll      Volume up/down
   Tab / Shift+Tab           Next/previous sketch (gallery mode)
@@ -149,7 +149,9 @@ export function parseArgs(rawArgv) {
     throw new Error('-S is only valid in render mode (requires -o OUTPUT)');
   }
   if (raw.output && !raw.audio && !raw.length) {
-    throw new Error('render mode without AUDIO requires -L [-][[HH:]MM:]SS[.mmm]');
+    throw new Error(
+      'render mode without AUDIO requires -L [-][[HH:]MM:]SS[.mmm]',
+    );
   }
 
   if (raw.sketch) {

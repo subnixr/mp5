@@ -140,6 +140,12 @@ Boolean toggle.
 params('showGrid', false, { type: 'checkbox' });
 ```
 
+Set `checkboxLeft: true` to render the checkbox to the left of the label instead of right.
+
+```js
+params('pin', false, { type: 'checkbox', label: 'Pin', checkboxLeft: true });
+```
+
 ### `'select'`
 
 Dropdown. Requires an `options` array of string values.
@@ -171,6 +177,64 @@ Image file picker. Like `'file'` but adds a preview button: when a file is selec
 params('texture', null, { type: 'image', label: 'Texture' });
 ```
 
+### `'time'`
+
+Time input. Value is a number in seconds. Positive values are offsets from the start; negative values are offsets from the end (e.g. `-10` = 10 s before end). Focusing the field opens a scrub popup with a slider.
+
+```js
+params('cueIn', 65.5, {
+  type: 'time',
+  label: 'Cue in',
+  max: 3600,
+});
+```
+
+Set `seconds: true` for decimal seconds display instead of timecode format.
+
+```js
+params('offset', -10, {
+  type: 'time',
+  label: 'Offset',
+  seconds: true,
+  max: 3600,
+});
+```
+
+| Opt | Description |
+| --- | ----------- |
+| `max` | Slider upper bound when no audio duration is loaded (default: `3600`) |
+| `seconds` | `true` = decimal seconds `[-]s`; `false` (default) = timecode `[-][[HH:]MM:]SS[.mmm]` |
+| `seek` | `false` to disable the scrub popup slider (default: popup opens on focus) |
+
+## Tooltips (`tip`)
+
+Any param, combo, grid, group, or repeater can carry a `tip` string. The settings window renders an ⓘ icon next to the label; hovering shows the tooltip.
+
+```js
+params('speed', 1.0, {
+  type: 'number',
+  label: 'Speed',
+  min: 0,
+  max: 5,
+  tip: 'Animation speed multiplier.',
+});
+```
+
+Pass `tip` inside the opts object for combos, grids, groups, and repeaters:
+
+```js
+params.combo('origin', 'Origin',
+  { tip: 'Canvas position of the origin point.' },
+  params('ox', 0, { type: 'number', label: 'X' }),
+  params('oy', 0, { type: 'number', label: 'Y' }),
+);
+
+params.group('controls', 'Controls',
+  { tip: 'Main animation controls.' },
+  speed, color,
+);
+```
+
 ## Grouping parameters
 
 Use `params.group(key, label, ...children)` to organize params into collapsible sections in the settings window. Children are individual param, combo, grid, or nested group objects. Groups can be nested.
@@ -188,23 +252,21 @@ Top-level groups are expanded by default; nested groups are collapsed.
 
 ## Repeater
 
-Use `params.repeater(key, defaults, field, opts)` to make a parameter hold a variable-length array. The settings window renders the list with **+** / **−** buttons to add and remove items. Items can be reordered by dragging the handle on the left.
+Use `params.repeater(key, defaults, opts, field)` to make a parameter hold a variable-length array. The settings window renders the list with **+** / **−** buttons to add and remove items. Items can be reordered by dragging the handle on the left.
 
 ```js
 const color = params('color', '#ffffff', { type: 'color', label: 'Color' });
-const colorList = params.repeater('colors', ['#ffffff'], color, {
-  min: 1,
-  max: 8,
-});
+const colorList = params.repeater('colors', ['#ffffff'], { min: 1, max: 8 }, color);
 ```
 
-| Argument   | Description                                                        |
-| ---------- | ------------------------------------------------------------------ |
-| `key`      | Storage key for the repeater array                                 |
-| `defaults` | Initial array of values (padded to `opts.min` if shorter)          |
-| `field`    | A param, combo, or grid object that defines each item's type       |
-| `opts.min` | Minimum number of items (default: `0`)                             |
-| `opts.max` | Maximum number of items, or `null` for unlimited (default: `null`) |
+| Argument    | Description                                                        |
+| ----------- | ------------------------------------------------------------------ |
+| `key`       | Storage key for the repeater array                                 |
+| `defaults`  | Initial array of values (padded to `opts.min` if shorter)          |
+| `opts.min`  | Minimum number of items (default: `0`)                             |
+| `opts.max`  | Maximum number of items, or `null` for unlimited (default: `null`) |
+| `opts.label`| Override the repeater header label (defaults to `key`)             |
+| `field`     | A param, combo, or grid object that defines each item's type       |
 
 Reading repeater values:
 
@@ -217,7 +279,7 @@ colorList[0].onChange(cb); // subscribe to changes on a specific item
 
 ## Combo
 
-Use `params.combo(key, label, ...paramObjs)` to display multiple params as a single horizontal row in the settings window. Each `paramObj` is a regular `params()` result.
+Use `params.combo(key, label, ...paramObjs)` to display multiple params as a single horizontal row in the settings window. Each `paramObj` is a regular `params()` result. Sub-params accept a `flex` option that controls their width share inside the row (CSS flex value or `'auto'`). By default all sub-params get `flex: 'auto'` (shrink to content) except the last, which gets `flex: 1` (fills remaining space).
 
 ```js
 const stopColor = params('stopColor', '#ffffff', {
@@ -232,6 +294,13 @@ const stopPos = params('stopPos', 0, {
   label: 'Pos',
 });
 const stop = params.combo('stop', 'Stop', stopColor, stopPos);
+
+// explicit flex values
+const tagged = params.combo('tagged', 'Tagged',
+  params('tg_label', 'main', { type: 'text',     label: 'Tag', flex: 2 }),
+  params('tg_val',   50,     { type: 'number',   label: 'Val', flex: 1 }),
+  params('tg_on',    true,   { type: 'checkbox', label: 'On',  flex: 'auto' }),
+);
 ```
 
 Pass a combo to `params.repeater()` to build a list of grouped rows (e.g. gradient stops):
@@ -240,8 +309,8 @@ Pass a combo to `params.repeater()` to build a list of grouped rows (e.g. gradie
 const stops = params.repeater(
   'stops',
   [{ stopColor: '#ffffff', stopPos: 0 }],
-  stop,
   { min: 2 },
+  stop,
 );
 
 // Reading values:
@@ -285,8 +354,8 @@ Pass a grid to `params.repeater()` to build a list of grid rows:
 const rows = params.repeater(
   'rows',
   [{ r: 0, g: 128, b: 255, name: '' }],
-  colorDef,
   { min: 1 },
+  colorDef,
 );
 ```
 
@@ -328,7 +397,23 @@ params.group(
 | `paramObj`                   | `paramObj.value` is truthy      |
 | `{ param: paramObj, is: v }` | `paramObj.value === v`          |
 
-For groups, the options object `{ disabled: … }` is passed as the first argument after the label, before the child params.
+For groups, combos, and grids, pass `{ disabled: … }` as the first argument after the label (the same opts object that accepts `tip`):
+
+```js
+const mode = params('mode', 'simple', { type: 'select', options: ['simple', 'full'] });
+
+params.combo('advancedCombo', 'Advanced combo',
+  { disabled: { param: mode, is: 'simple' } },
+  params('x', 0, { type: 'number', label: 'X' }),
+  params('y', 0, { type: 'number', label: 'Y' }),
+);
+
+params.grid('advancedGrid', 2,
+  { disabled: { param: mode, is: 'simple' } },
+  params('w', 100, { type: 'number', label: 'W' }),
+  params('h', 100, { type: 'number', label: 'H' }),
+);
+```
 
 ---
 
