@@ -1,6 +1,11 @@
 import Button from '../../components/ui/button.js';
 import * as Input from '../../components/ui/inputs.js';
 import FfmpegArgs from '../../components/ui/ffmpegArgs.js';
+import {
+  applyTheme,
+  DEFAULT_THEME,
+  DEFAULT_BG,
+} from '../../components/theme.js';
 
 const FORMAT_PRESETS = {
   mp4: `-c:v libx264\n-pix_fmt yuv420p`,
@@ -40,8 +45,11 @@ function trackOrRenderMax() {
   return len != null ? len : (parseTimecode(MIC_DEFAULT_LENGTH) ?? 0);
 }
 
+applyTheme(window.api.definitions.appPrefs?.theme ?? DEFAULT_THEME);
+
 const panel = ParamsPanel(document.querySelector('#settings'));
 let renderPanel = RenderingPanel(document.querySelector('#rendering'));
+GuiPanel(document.querySelector('#gui'));
 
 document.querySelectorAll('.btn').forEach(Button);
 
@@ -129,6 +137,95 @@ document
     });
   });
 
+function GuiPanel(elem) {
+  const prefs = window.api.definitions.appPrefs ?? {};
+
+  const themeField = Input.Field(
+    {
+      key: 'theme',
+      type: 'checkbox',
+      label: 'Light theme',
+      value: prefs.theme === 'light',
+    },
+    (_key, value) => {
+      const theme = value ? 'light' : 'dark';
+      applyTheme(theme);
+      window.api.setAppPrefs({ theme });
+    },
+  );
+
+  const bgField = Input.Field(
+    {
+      key: 'bgColor',
+      type: 'color',
+      label: 'Visualizer background',
+      value: prefs.bgColor ?? DEFAULT_BG,
+      tip: 'Only affects the application background around the canvas — not the rendered background (e.g. transparent mp4 output).',
+    },
+    (_key, value) => window.api.setAppPrefs({ bgColor: value }),
+  );
+
+  // config file picker above a save button. choosing a file loads that config
+  // immediately and makes it the active target; saving writes the current gui
+  // prefs + rendering defaults back to whichever file is loaded
+  const fileField = Input.Field(
+    {
+      key: 'configFile',
+      type: 'file',
+      label: 'Config file',
+      value: window.api.definitions.configPath,
+    },
+    async (_key, filePath) => {
+      if (!filePath) return;
+      applyConfig(await window.api.loadConfig(filePath));
+    },
+  );
+
+  // setValue emits change on each field, reusing the live-apply handlers above
+  // (theme/bg are pushed to the visualizer that way); rendering must be pushed
+  // explicitly because applyValues suppresses its own change events
+  function applyConfig(cfg) {
+    themeField.setValue((cfg.gui?.theme ?? DEFAULT_THEME) === 'light');
+    bgField.setValue(cfg.gui?.bgColor ?? DEFAULT_BG);
+    if (cfg.rendering && Object.keys(cfg.rendering).length) {
+      renderPanel.applyValues(cfg.rendering);
+      window.api.pushRendering(renderPanel.getValues());
+    }
+  }
+
+  const saveBtn = Button({
+    icon: 'save',
+    label: 'Save config',
+    onClick: async () => {
+      // skip/length are track-specific, not defaults; persist geometry/fps/codec
+      const rendering = renderPanel.getValues();
+      delete rendering.skip;
+      delete rendering.length;
+      try {
+        await window.api.saveConfig({
+          gui: {
+            theme: themeField.getValue() ? 'light' : 'dark',
+            bgColor: bgField.getValue(),
+          },
+          rendering,
+        });
+      } catch (e) {
+        console.error('saveConfig failed:', e);
+      }
+    },
+  });
+  saveBtn.classList.add('config-save');
+
+  const group = Input.Group({
+    title: 'gui',
+    open: false,
+    children: [themeField, bgField, fileField, saveBtn],
+  });
+  elem.appendChild(group);
+
+  return elem;
+}
+
 function RenderingPanel(elem) {
   // Mic mode (no audio file) has no track duration to derive render length
   // from, so default the Length field to 10s the way the CLI requires -L.
@@ -137,7 +234,10 @@ function RenderingPanel(elem) {
   function makeField(labelText, control, tip) {
     const wrap = document.createElement('label');
     wrap.className = 'input';
-    const lbl = Input.Label(document.createElement('span'), { label: labelText, tip });
+    const lbl = Input.Label(document.createElement('span'), {
+      label: labelText,
+      tip,
+    });
     wrap.appendChild(lbl);
     wrap.appendChild(control);
     return wrap;
@@ -155,7 +255,10 @@ function RenderingPanel(elem) {
     getMax: trackOrRenderMax,
   });
 
-  const formatCtrl = Input.Select({ value: 'mov', options: ['mp4', 'mov', 'webm'] });
+  const formatCtrl = Input.Select({
+    value: 'mov',
+    options: ['mp4', 'mov', 'webm'],
+  });
   const formatSelect = formatCtrl.querySelector('select');
 
   const ffmpegDiv = document.createElement('div');
@@ -175,14 +278,16 @@ function RenderingPanel(elem) {
       formatSelect.value = match[0];
       ffmpegIsDefault = true;
     } else {
-      if (!customOpt) {
-        const opt = document.createElement('option');
+      let opt = customOpt;
+      if (!opt) {
+        opt = document.createElement('option');
         opt.value = 'custom';
         opt.textContent = 'custom';
         opt.disabled = true;
         formatSelect.insertBefore(opt, formatSelect.firstChild);
       }
-      formatSelect.value = 'custom';
+      // disabled options can't be picked via .value; select it directly
+      opt.selected = true;
       ffmpegIsDefault = false;
     }
   }
@@ -195,7 +300,13 @@ function RenderingPanel(elem) {
   const row2 = document.createElement('div');
   row2.className = 'rp-row rp-row-2';
   row2.appendChild(makeField('FPS', fpsCtrl));
-  row2.appendChild(makeField('Format', formatCtrl, 'Only mov and webm support true transparency.\nDefaults to black background for mp4.'));
+  row2.appendChild(
+    makeField(
+      'Format',
+      formatCtrl,
+      'Only mov and webm support true transparency.\nDefaults to black background for mp4.',
+    ),
+  );
 
   const row3 = document.createElement('div');
   row3.className = 'rp-row';
@@ -215,7 +326,7 @@ function RenderingPanel(elem) {
   let ffmpegIsDefault = true;
 
   ffmpegExtra.addEventListener('input', () => {
-    ffmpegIsDefault = ffmpegExtra.value === FORMAT_PRESETS[formatSelect.value];
+    syncFormatSelect(ffmpegExtra.value);
   });
 
   formatCtrl.addEventListener('change', (e) => {
@@ -289,9 +400,21 @@ function RenderingPanel(elem) {
     if (fps != null) fpsCtrl.setValue(fps);
     // default skip to 0 and length to the full track (mic has no track, so use
     // the fixed mic default there)
-    const defaultLength = isMic ? parseTimecode(MIC_DEFAULT_LENGTH) : (getDuration() || null);
-    const skipVal = skip != null ? (typeof skip === 'number' ? skip : parseTimecode(skip)) : 0;
-    const lenVal = obj.length != null ? (typeof obj.length === 'number' ? obj.length : parseTimecode(String(obj.length))) : defaultLength;
+    const defaultLength = isMic
+      ? parseTimecode(MIC_DEFAULT_LENGTH)
+      : getDuration() || null;
+    const skipVal =
+      skip != null
+        ? typeof skip === 'number'
+          ? skip
+          : parseTimecode(skip)
+        : 0;
+    const lenVal =
+      obj.length != null
+        ? typeof obj.length === 'number'
+          ? obj.length
+          : parseTimecode(String(obj.length))
+        : defaultLength;
     timeRangeCtrl.setValue({
       from: skipVal,
       to: lenVal != null ? skipVal + lenVal : null,

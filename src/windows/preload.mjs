@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('args', {
   sketchDisplayName: args.sketchDisplayName ?? null,
   openSettings: args.openSettings ?? false,
   initialRendering: args.initialRendering ?? null,
+  appPrefs: args.appPrefs ?? null,
+  configPath: args.configPath ?? null,
 });
 
 contextBridge.exposeInMainWorld('api', {
@@ -47,6 +49,8 @@ contextBridge.exposeInMainWorld('api', {
   onRenderResume: (cb) => ipcRenderer.on('render-resume', cb),
   onRenderNext: (cb) => ipcRenderer.on('render-next', cb),
   onSettingsUpdate: (cb) => ipcRenderer.on('settings-update', cb),
+  onAppPrefsUpdate: (cb) =>
+    ipcRenderer.on('app-prefs-update', (_e, p) => cb(p)),
   setWatchSketch: (path) => ipcRenderer.send('set-watch-sketch', path),
   saveSketchPreview: (galleryDir, sketchPath, dataURL) =>
     ipcRenderer.invoke('save-sketch-preview', {

@@ -107,9 +107,9 @@ A `.zip` sketch is extracted to a temporary directory on launch. Assets inside t
 ## CLI
 
 ```
-mp5 [SKETCH] [-f] [-p FILE] [-P JSON]
-mp5 [SKETCH] <AUDIO> [-f] [-l] [-p FILE] [-P JSON]
-mp5 [SKETCH] [AUDIO] -o <OUTPUT> [-S [[HH:]MM:]SS] [-L [[HH:]MM:]SS] [-F FPS] [-g WxH] [-p FILE] [-P JSON]
+mp5 [SKETCH] [-f] [-p FILE] [-P JSON] [-c FILE]
+mp5 [SKETCH] <AUDIO> [-f] [-l] [-p FILE] [-P JSON] [-c FILE]
+mp5 [SKETCH] [AUDIO] -o <OUTPUT> [-S [[HH:]MM:]SS] [-L [[HH:]MM:]SS] [-F FPS] [-g WxH] [-p FILE] [-P JSON] [-c FILE]
 ```
 
 Both arguments are optional and can be given in any order. A `.js` or `.zip` file is treated as the sketch; a directory activates gallery mode; anything else is treated as the audio file. When omitted, the app falls back to sensible defaults and sketch/audio can be loaded from the controls bar.
@@ -141,6 +141,7 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 | `-g WxH`                   | Output resolution (default: 1920×1080); overrides `params.canvas()` hint     |
 | `-p FILE`                  | Load initial params (and optionally render settings) from a JSON preset file |
 | `-P JSON`                  | Pass initial params as an inline JSON string                                 |
+| `-c FILE`                  | Use FILE as the app config (default: platform config dir / `mp5.json`)       |
 | `--help`                   | Show usage                                                                   |
 
 `-p` and `-P` can be combined; inline `-P` values override file `-p` values for the same keys.
@@ -226,9 +227,50 @@ mp5 sketch.js track.mp3 -P '{"speed": 2.5, "color": "#ff0000"}'
 # Load a structured preset (params + render settings)
 mp5 sketch.js track.mp3 -p preset.json
 
+# Use a specific app config file
+mp5 sketch.js track.mp3 -c ./my-config.json
+
 # Run visualizer with a zipped sketch
 mp5 sketch.zip track.mp3
 
 # Render a zipped sketch
 mp5 sketch.zip track.mp3 -o out.mp4
 ```
+
+---
+
+## App config
+
+App config is a persistent JSON file holding GUI preferences and render defaults — distinct from a per-sketch **preset** (which carries param values). It is created with defaults on first run and lives in the platform config dir (e.g. `~/.config/mp5.json` on Linux). Override the path with `-c FILE`.
+
+```json
+{
+  "gui": { "theme": "dark", "bgColor": "#000000" },
+  "rendering": { "width": 1920, "height": 1080, "fps": 60 }
+}
+```
+
+| Field            | Description                                                            |
+| ---------------- | --------------------------------------------------------------------- |
+| `gui.theme`      | Settings-window chrome theme: `'dark'` (default) or `'light'`         |
+| `gui.bgColor`    | Visualizer background (letterbox around the canvas); not the rendered output background |
+| `rendering`      | Default render width / height / fps; lowest-priority default source   |
+
+A missing file or invalid JSON falls back to defaults — the app always launches; a corrupt existing file is never overwritten.
+
+### Render-default precedence
+
+Render width/height/fps resolve highest-to-lowest: **CLI flags** (`-g`, `-F`) → **preset** `rendering` (`-p`) → **`params.canvas()`** hint → **app config** `rendering` → **hardcoded defaults** (1920×1080, 60 fps).
+
+### GUI settings
+
+The **gui** group at the top of the settings window's right pane edits the active config live:
+
+| Control               | Effect                                                                       |
+| --------------------- | ---------------------------------------------------------------------------- |
+| **Light theme**       | Toggles the settings-window theme (applied immediately).                     |
+| **Visualizer background** | Color of the app background around the canvas (applied to the visualizer live). |
+| **Config file**       | Pick a different config file; its values load and it becomes the save target. |
+| **Save config**       | Writes the current GUI prefs and render defaults back to the loaded config file. |
+
+Theme and background edits apply immediately but are session-only until **Save config** persists them. The saved `rendering` block excludes the track-specific skip/length window — only geometry, fps, and codec are stored as defaults.

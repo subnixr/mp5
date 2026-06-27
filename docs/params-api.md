@@ -12,7 +12,7 @@ Declares the preferred canvas size for the sketch. Call once at the top of the s
 
 - The visualizer window resizes to `W×H` (at 50% scale) when the sketch loads.
 - The render settings width/height fields default to `W` and `H`.
-- Overridden by the `-g WxH` CLI flag or a preset that specifies `rendering.width`/`height` — in those cases the canvas hint has no effect on the settings window.
+- Overridden by the `-g WxH` CLI flag or a preset that specifies `rendering.width`/`height` — in those cases the canvas hint has no effect on the settings window. It does, however, take priority over the app config's `rendering` defaults (see the render-default precedence in [overview.md](overview.md#render-default-precedence)).
 - Sketches without a size preference omit the call entirely.
 
 ```js

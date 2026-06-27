@@ -79,6 +79,25 @@ body {
   letter-spacing: 0.06em;
 }
 
+/* Right pane (GUI + rendering) scrolls as a whole; the divider lives on the
+   panel so it spans full height regardless of content length */
+
+#rendering-panel {
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+
+/* GUI panel — sits above rendering in the same column */
+
+.gui-container {
+  background: var(--color-bg);
+  /* bottom padding matches .settings-container's inter-group gap (1rem) so the
+     RENDERING group below lines up with the second param group */
+  padding: 0.4em 1rem 1rem;
+  box-sizing: border-box;
+  flex: none;
+}
+
 /* Rendering panel */
 
 .rendering-container {
@@ -86,16 +105,18 @@ body {
   flex-direction: column;
   gap: 1.6rem;
   background: var(--color-bg);
-  border-left: 1px solid var(--color-border);
   padding: 0 1rem 1rem;
   box-sizing: border-box;
-  flex: 1;
-  overflow-y: auto;
+  flex: none;
 }
 
 @media (max-width: 719px) {
-  #panes-container .rendering-container {
+  #rendering-panel {
     border-left: none;
+    overflow-y: visible;
+  }
+
+  #panes-container .rendering-container {
     border-bottom: 1px solid var(--color-border);
   }
 }
@@ -117,6 +138,15 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+/* config save button (gui group): full-width, sized like the other in-panel
+   buttons (e.g. .repeater-add). higher specificity than .btn because ui.css is
+   loaded via adoptedStyleSheets, which wins ties against this linked sheet */
+.group-fields .config-save {
+  flex: none;
+  width: 100%;
+  height: 3rem;
 }
 
 /* Action bar */
@@ -159,7 +189,8 @@ body {
 
 /* Params groups */
 
-.settings-container > .group:first-child {
+.settings-container > .group:first-child,
+.gui-container > .group:first-child {
   margin-top: 0.6em;
 }
 

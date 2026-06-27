@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('api', {
   onApplyParams: (cb) =>
     ipcRenderer.on('settings-apply-params', (_e, p) => cb(p)),
   pushRendering: (r) => ipcRenderer.send('settings-rendering-changed', r),
+  setAppPrefs: (prefs) => ipcRenderer.send('app-prefs-changed', prefs),
+  saveConfig: (cfg) => ipcRenderer.invoke('config-save', cfg),
+  loadConfig: (filePath) => ipcRenderer.invoke('config-load', filePath),
   saveParams: (values) => ipcRenderer.invoke('settings-save', values),
   loadParams: () => ipcRenderer.invoke('settings-load'),
   browseOutput: (defaultName) =>

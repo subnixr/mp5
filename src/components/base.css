@@ -13,6 +13,21 @@
   --color-error: #d03030;
 }
 
+:root[data-theme='light'] {
+  --color-bg: #fff;
+  --color-fg: #000;
+  --color-btn: #eee;
+  --color-field: #ddd;
+  --color-active: #ccc;
+  --color-border: #bbb;
+  --color-subdued: #aaa;
+  --color-muted: #999;
+  --color-dim: #666;
+  --color-hint: #555;
+  --color-select: #00838f;
+  --color-error: #d03030;
+}
+
 @font-face {
   font-family: 'Hermit';
   src: url('../assets/Hermit-Regular.otf') format('opentype');

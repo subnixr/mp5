@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { relayConsole } from '../error.js';
 import { resolveBinary } from '../../binaries.js';
 import { toNested } from '../../components/engine/preset.js';
+import { readConfig, writeConfig } from '../../components/config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,7 +18,12 @@ function hasBinary(name) {
   );
 }
 
-export function openSettingsWindow(defs, visWin, getAudioBase = null) {
+export function openSettingsWindow(
+  defs,
+  visWin,
+  getAudioBase = null,
+  configPath = null,
+) {
   const win = new BrowserWindow({
     width: 840,
     minWidth: 360,
@@ -47,8 +53,11 @@ export function openSettingsWindow(defs, visWin, getAudioBase = null) {
     if (d.sketchName) sketchName = d.sketchName;
     if (d.sketchDir) sketchDir = d.sketchDir;
     const toSend = geometryLocked ? { ...d, canvasHint: null } : d;
-    const withAudio = getAudioBase ? { ...toSend, audioBase: getAudioBase() } : toSend;
-    if (!win.isDestroyed()) win.webContents.send('settings-defs-push', withAudio);
+    const withAudio = getAudioBase
+      ? { ...toSend, audioBase: getAudioBase() }
+      : toSend;
+    if (!win.isDestroyed())
+      win.webContents.send('settings-defs-push', withAudio);
   };
 
   const onParamsUpdate = (_e, obj) => {
@@ -59,6 +68,12 @@ export function openSettingsWindow(defs, visWin, getAudioBase = null) {
   // survives the settings window being closed and reopened
   const onRenderingChanged = (_e, r) => {
     if (!visWin.isDestroyed()) visWin.webContents.send('rendering-update', r);
+  };
+
+  // app-level GUI prefs (theme/bg) are session-only; just relay them to the
+  // visualizer so it can apply them live
+  const onAppPrefs = (_e, p) => {
+    if (!visWin.isDestroyed()) visWin.webContents.send('app-prefs-update', p);
   };
 
   const onRequestFile = async (_e, key) => {
@@ -103,6 +118,26 @@ export function openSettingsWindow(defs, visWin, getAudioBase = null) {
       visWin.webContents.send('apply-preset-path', filePaths[0]);
   };
 
+  // the gui group can load a different config file at runtime; track which one
+  // is active so saves go back to the same file
+  let activeConfigPath = configPath;
+
+  // persist the GUI prefs + current rendering values to the loaded config file;
+  // live theme/bg already applied via app-prefs-changed, this just makes them
+  // survive restart
+  const onConfigSave = async (_e, payload) => {
+    if (!activeConfigPath) return false;
+    writeConfig(activeConfigPath, { version: app.getVersion(), ...payload });
+    return true;
+  };
+
+  // load a config chosen in the gui, make it the active save target, and return
+  // it so the renderer can apply its values immediately
+  const onConfigLoad = (_e, filePath) => {
+    if (filePath) activeConfigPath = filePath;
+    return readConfig(activeConfigPath);
+  };
+
   const onOpenFile = (_e, filePath) => shell.openPath(filePath);
 
   const onBrowseOutput = async (_e, defaultName) => {
@@ -125,21 +160,27 @@ export function openSettingsWindow(defs, visWin, getAudioBase = null) {
   ipcMain.on('settings-defs-push', onDefsPush);
   ipcMain.on('settings-update', onParamsUpdate);
   ipcMain.on('settings-rendering-changed', onRenderingChanged);
+  ipcMain.on('app-prefs-changed', onAppPrefs);
   ipcMain.handle('settings-request-file', onRequestFile);
   ipcMain.handle('settings-save', onSave);
   ipcMain.handle('settings-load', onLoad);
   ipcMain.handle('settings-open-file', onOpenFile);
   ipcMain.handle('settings-browse-output', onBrowseOutput);
+  ipcMain.handle('config-save', onConfigSave);
+  ipcMain.handle('config-load', onConfigLoad);
 
   win.on('closed', () => {
     ipcMain.off('settings-defs-push', onDefsPush);
     ipcMain.off('settings-update', onParamsUpdate);
     ipcMain.off('settings-rendering-changed', onRenderingChanged);
+    ipcMain.off('app-prefs-changed', onAppPrefs);
     ipcMain.removeHandler('settings-request-file');
     ipcMain.removeHandler('settings-save');
     ipcMain.removeHandler('settings-load');
     ipcMain.removeHandler('settings-open-file');
     ipcMain.removeHandler('settings-browse-output');
+    ipcMain.removeHandler('config-save');
+    ipcMain.removeHandler('config-load');
   });
 
   win.loadFile(path.join(__dirname, 'settings.html'), {

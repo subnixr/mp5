@@ -220,9 +220,12 @@ export function runVisualizer(args) {
         audioBase,
         initialRendering:
           effectiveDefs.initialRendering ?? args.initialRendering ?? null,
+        configPath: args.configPath,
+        appPrefs: args.appPrefs,
       },
       win,
       getAudioBase,
+      args.configPath,
     );
     settingsWin.webContents.once('did-finish-load', () => {
       if (!win.isDestroyed())
@@ -385,7 +388,9 @@ export function runVisualizer(args) {
         if (!win.isDestroyed()) win.webContents.send('sketch-changed');
       }),
     );
-    const sketchDir = args.sketchSourcePath ? os.homedir() : path.dirname(picked);
+    const sketchDir = args.sketchSourcePath
+      ? os.homedir()
+      : path.dirname(picked);
     return { path: entryPath, displayName, sketchDir };
   };
 

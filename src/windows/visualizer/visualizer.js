@@ -4,12 +4,15 @@ import Engine from '../../components/engine/index.js';
 import { fromNested } from '../../components/engine/preset.js';
 import Controls from './components/controls.js';
 import { handleErrors } from '../error.js';
+import { applyTheme, applyVisualizerBg } from '../../components/theme.js';
 
 import eq from './sketches/eq.js';
 
 function sketchNameFromPath(p) {
   const base = p.split('/').pop();
-  return base === 'sketch.js' ? p.split('/').slice(-2, -1)[0] : base.replace(/\.js$/, '');
+  return base === 'sketch.js'
+    ? p.split('/').slice(-2, -1)[0]
+    : base.replace(/\.js$/, '');
 }
 
 const loader = Loader(document.querySelector('#loader'));
@@ -218,7 +221,18 @@ async function main() {
 
   controls.attach(engine);
 
+  // apply persisted GUI prefs from the config file at startup; live edits from
+  // the settings window arrive later via onAppPrefsUpdate
+  const startupPrefs = window.args.appPrefs;
+  if (startupPrefs?.theme != null) applyTheme(startupPrefs.theme);
+  if (startupPrefs?.bgColor != null) applyVisualizerBg(startupPrefs.bgColor);
+
   window.api.onSettingsUpdate((_e, obj) => engine.updateParams(obj));
+
+  window.api.onAppPrefsUpdate((p) => {
+    if (p.theme != null) applyTheme(p.theme);
+    if (p.bgColor != null) applyVisualizerBg(p.bgColor);
+  });
 
   // settings "load" button hands us a file path; parse it the same way as a
   // drop and run it through the shared applyPreset

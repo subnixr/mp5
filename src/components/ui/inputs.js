@@ -51,7 +51,7 @@ function emit(elem, value) {
   elem.dispatchEvent(new CustomEvent('change', { detail: value }));
 }
 
-function iconSpan(id) {
+export function iconSpan(id) {
   const span = document.createElement('span');
   span.className = 'action-icon';
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -89,9 +89,12 @@ function showTip(anchor, text) {
   const popupW = popup.offsetWidth;
   const popupH = popup.offsetHeight;
   const iconCenterX = rect.left + rect.width / 2;
-  const left = Math.max(4, Math.min(iconCenterX - popupW / 2, window.innerWidth - popupW - 4));
+  const left = Math.max(
+    4,
+    Math.min(iconCenterX - popupW / 2, window.innerWidth - popupW - 4),
+  );
   popup.style.left = left + 'px';
-  popup.style.setProperty('--tip-arrow-x', (iconCenterX - left - 6) + 'px');
+  popup.style.setProperty('--tip-arrow-x', iconCenterX - left - 6 + 'px');
   const goDown = window.innerHeight - rect.bottom >= popupH + 4;
   if (goDown) {
     popup.style.top = rect.bottom + 4 + 'px';
@@ -113,7 +116,9 @@ function hideTip(anchor) {
 export function Tooltip(anchor, text) {
   anchor.addEventListener('click', (e) => {
     e.stopPropagation();
-    _tipAnchor === anchor && _tipPopup?.style.display !== 'none' ? hideTip(anchor) : showTip(anchor, text);
+    _tipAnchor === anchor && _tipPopup?.style.display !== 'none'
+      ? hideTip(anchor)
+      : showTip(anchor, text);
   });
   anchor.addEventListener('mouseenter', () => showTip(anchor, text));
   anchor.addEventListener('mouseleave', () => hideTip(anchor));
@@ -128,7 +133,14 @@ function makeTipIcon(tip) {
 
 export function Label(
   elem,
-  { collapsible = false, group = false, label, open = true, onExpand, tip } = {},
+  {
+    collapsible = false,
+    group = false,
+    label,
+    open = true,
+    onExpand,
+    tip,
+  } = {},
 ) {
   if (group) {
     elem.classList.add('group-title');
@@ -248,8 +260,13 @@ export function Number(field) {
   };
 
   input.addEventListener('keydown', (evt) => {
-    if (evt.key === 'ArrowUp') { evt.preventDefault(); nudge(+step); }
-    else if (evt.key === 'ArrowDown') { evt.preventDefault(); nudge(-step); }
+    if (evt.key === 'ArrowUp') {
+      evt.preventDefault();
+      nudge(+step);
+    } else if (evt.key === 'ArrowDown') {
+      evt.preventDefault();
+      nudge(-step);
+    }
   });
 
   container.appendChild(input);
@@ -765,7 +782,10 @@ export function Combo(def, onSubChange) {
   container.className = 'combo';
 
   if (def.label !== false) {
-    const labelSpan = Label(document.createElement('span'), { label: def.label ?? def.key ?? '', tip: def.tip });
+    const labelSpan = Label(document.createElement('span'), {
+      label: def.label ?? def.key ?? '',
+      tip: def.tip,
+    });
     container.appendChild(labelSpan);
   }
 
@@ -787,13 +807,17 @@ export function Combo(def, onSubChange) {
     const ctrl = createControl({ ...itemDef, value: itemValue });
     const isFlexAuto = itemDef.flex === 'auto';
     ctrl.style.flex =
-      itemDef.flex == null ? (itemDef.type === 'checkbox' ? '0 0 auto' : '1') :
-      isFlexAuto ? (
-        itemDef.type === 'checkbox' ? '0 0 auto' :
-        ctrl.classList.contains('has-unit') ? '0 1 8rem' :
-        '0 1 6rem'
-      ) :
-      String(itemDef.flex);
+      itemDef.flex == null
+        ? itemDef.type === 'checkbox'
+          ? '0 0 auto'
+          : '1'
+        : isFlexAuto
+          ? itemDef.type === 'checkbox'
+            ? '0 0 auto'
+            : ctrl.classList.contains('has-unit')
+              ? '0 1 8rem'
+              : '0 1 6rem'
+          : String(itemDef.flex);
     if (isFlexAuto) ctrl.dataset.flexAuto = '';
     values[itemDef.key] = ctrl.getValue();
 
@@ -936,7 +960,9 @@ export function Field(def, onChange) {
 
     if (def.label !== false) {
       if (def.type === 'checkbox') {
-        const span = Label(document.createElement('span'), { label: def.label ?? def.key });
+        const span = Label(document.createElement('span'), {
+          label: def.label ?? def.key,
+        });
         if (!def.checkboxLeft) {
           wrapper.appendChild(span);
           wrapper.appendChild(control);
@@ -946,7 +972,10 @@ export function Field(def, onChange) {
         }
         if (def.tip != null) wrapper.appendChild(makeTipIcon(def.tip));
       } else {
-        const span = Label(document.createElement('span'), { label: def.label ?? def.key, tip: def.tip });
+        const span = Label(document.createElement('span'), {
+          label: def.label ?? def.key,
+          tip: def.tip,
+        });
         wrapper.appendChild(span);
         wrapper.appendChild(control);
       }
@@ -1040,7 +1069,7 @@ export function Group(def, register = null, depth = 0) {
 function positionPopup(anchor, popup) {
   const rect = anchor.getBoundingClientRect();
   const popupHeight = popup.offsetHeight;
-  const goDown = (window.innerHeight - rect.bottom) >= popupHeight;
+  const goDown = window.innerHeight - rect.bottom >= popupHeight;
   popup.style.position = 'fixed';
   popup.style.width = rect.width + 'px';
   popup.style.left = rect.left + 'px';
@@ -1049,7 +1078,7 @@ function positionPopup(anchor, popup) {
     popup.style.bottom = '';
   } else {
     popup.style.top = '';
-    popup.style.bottom = (window.innerHeight - rect.top) + 'px';
+    popup.style.bottom = window.innerHeight - rect.top + 'px';
   }
   popup.dataset.popupDir = goDown ? 'down' : 'up';
 }
@@ -1075,7 +1104,8 @@ function parseTimecodeStr(str) {
 
 function fmtSecs(s) {
   const abs = Math.abs(s);
-  const str = abs % 1 === 0 ? String(abs) : parseFloat(abs.toFixed(3)).toString();
+  const str =
+    abs % 1 === 0 ? String(abs) : parseFloat(abs.toFixed(3)).toString();
   return s < 0 ? '-' + str : str;
 }
 
@@ -1087,11 +1117,13 @@ function fmtTimecode(s) {
   const secs = totalSecs % 60;
   const mins = Math.floor(totalSecs / 60) % 60;
   const hours = Math.floor(totalSecs / 3600);
-  const msSuffix = ms > 0 ? '.' + String(ms).padStart(3, '0').replace(/0+$/, '') : '';
+  const msSuffix =
+    ms > 0 ? '.' + String(ms).padStart(3, '0').replace(/0+$/, '') : '';
   const secStr = String(secs).padStart(2, '0') + msSuffix;
-  const result = hours > 0
-    ? `${hours}:${String(mins).padStart(2, '0')}:${secStr}`
-    : `${mins}:${secStr}`;
+  const result =
+    hours > 0
+      ? `${hours}:${String(mins).padStart(2, '0')}:${secStr}`
+      : `${mins}:${secStr}`;
   return neg ? '-' + result : result;
 }
 
@@ -1134,10 +1166,20 @@ export function TimeRange(field) {
     return { wrap, inp, unit };
   }
 
-  function negPhFrom() { return useSecondsFrom ? '[-]seconds' : '[-][[HH:]MM:]SS'; }
-  function negPhTo() { return useSecondsTo ? '[-]seconds' : '[-][[HH:]MM:]SS'; }
-  function posPhTo() { return useSecondsTo ? 'seconds' : '[[HH:]MM:]SS'; }
-  const { wrap: fromWrap, inp: fromInp, unit: fromUnit } = makeField(negPhFrom());
+  function negPhFrom() {
+    return useSecondsFrom ? '[-]seconds' : '[-][[HH:]MM:]SS';
+  }
+  function negPhTo() {
+    return useSecondsTo ? '[-]seconds' : '[-][[HH:]MM:]SS';
+  }
+  function posPhTo() {
+    return useSecondsTo ? 'seconds' : '[[HH:]MM:]SS';
+  }
+  const {
+    wrap: fromWrap,
+    inp: fromInp,
+    unit: fromUnit,
+  } = makeField(negPhFrom());
   const { wrap: toWrap, inp: toInp, unit: toUnit } = makeField(negPhTo());
   inputsRow.appendChild(fromWrap);
   inputsRow.appendChild(toWrap);
@@ -1243,7 +1285,7 @@ export function TimeRange(field) {
     const endPct = ((parseFloat(endThumb.value) - minVal) / range) * 100;
     trackWrapper.style.setProperty(
       '--track-bg',
-      `linear-gradient(to right, var(--color-field) ${startPct}%, var(--color-fg) ${startPct}%, var(--color-fg) ${endPct}%, var(--color-field) ${endPct}%)`
+      `linear-gradient(to right, var(--color-field) ${startPct}%, var(--color-fg) ${startPct}%, var(--color-fg) ${endPct}%, var(--color-field) ${endPct}%)`,
     );
   }
 
@@ -1283,10 +1325,10 @@ export function TimeRange(field) {
     let endPos;
     if (lengthMode) {
       const len = parseTo();
-      endPos = len != null ? startPos + len : (max > minVal ? max : startPos);
+      endPos = len != null ? startPos + len : max > minVal ? max : startPos;
     } else {
       const to = parseTo();
-      endPos = to != null ? resolveNeg(to, max) : (max > minVal ? max : startPos);
+      endPos = to != null ? resolveNeg(to, max) : max > minVal ? max : startPos;
     }
     endPos = Math.min(Math.max(endPos, startPos), max);
     startThumb.value = startPos;
@@ -1298,7 +1340,10 @@ export function TimeRange(field) {
     const max = getMax();
     const startPos = parseFloat(startThumb.value);
     let endPos = parseFloat(endThumb.value);
-    if (startPos > endPos) { endPos = startPos; endThumb.value = endPos; }
+    if (startPos > endPos) {
+      endPos = startPos;
+      endThumb.value = endPos;
+    }
     fromInp.value = fmtFrom(signedFromHandle(startPos, signFrom, max));
     renderField2(startPos, endPos, max);
     updateGradient();
@@ -1309,7 +1354,10 @@ export function TimeRange(field) {
     const max = getMax();
     const startPos = parseFloat(startThumb.value);
     let endPos = parseFloat(endThumb.value);
-    if (endPos < startPos) { endPos = startPos; endThumb.value = endPos; }
+    if (endPos < startPos) {
+      endPos = startPos;
+      endThumb.value = endPos;
+    }
     renderField2(startPos, endPos, max);
     updateGradient();
     emitChange();
@@ -1363,7 +1411,9 @@ export function TimeRange(field) {
     const max = getMax();
     signFrom = signFrom === '+' ? '-' : '+';
     fromSignBtn.textContent = signFrom;
-    fromInp.value = fmtFrom(signedFromHandle(parseFloat(startThumb.value), signFrom, max));
+    fromInp.value = fmtFrom(
+      signedFromHandle(parseFloat(startThumb.value), signFrom, max),
+    );
     emitChange();
   });
 
@@ -1371,7 +1421,9 @@ export function TimeRange(field) {
     const max = getMax();
     signTo = signTo === '+' ? '-' : '+';
     toSignBtn.textContent = signTo;
-    toInp.value = fmtTo(signedFromHandle(parseFloat(endThumb.value), signTo, max));
+    toInp.value = fmtTo(
+      signedFromHandle(parseFloat(endThumb.value), signTo, max),
+    );
     emitChange();
   });
 
@@ -1388,7 +1440,10 @@ export function TimeRange(field) {
   function bindFormatToggle(unit, toggle) {
     unit.addEventListener('click', toggle);
     unit.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
     });
   }
 
@@ -1420,21 +1475,34 @@ export function TimeRange(field) {
     popup.hidden = true;
   }
 
-  fromInp.addEventListener('focus', () => { if (popup.hidden) openPopup(); });
-  toInp.addEventListener('focus', () => { if (popup.hidden) openPopup(); });
+  fromInp.addEventListener('focus', () => {
+    if (popup.hidden) openPopup();
+  });
+  toInp.addEventListener('focus', () => {
+    if (popup.hidden) openPopup();
+  });
 
   popup.addEventListener('mousedown', (e) => {
-    if (e.target !== startThumb && e.target !== endThumb
-      && e.target !== fromSignBtn && e.target !== toSignBtn) e.preventDefault();
+    if (
+      e.target !== startThumb &&
+      e.target !== endThumb &&
+      e.target !== fromSignBtn &&
+      e.target !== toSignBtn
+    )
+      e.preventDefault();
   });
 
   container.addEventListener('keydown', (evt) => {
-    if (evt.key === 'Escape' && !popup.hidden) { evt.stopPropagation(); closePopup(); }
+    if (evt.key === 'Escape' && !popup.hidden) {
+      evt.stopPropagation();
+      closePopup();
+    }
   });
 
   container.addEventListener('focusout', () => {
     requestAnimationFrame(() => {
-      if (!popup.hidden && !container.contains(document.activeElement)) closePopup();
+      if (!popup.hidden && !container.contains(document.activeElement))
+        closePopup();
     });
   });
 
@@ -1533,7 +1601,10 @@ export function Time(field) {
     const pct = max > 0 ? (parseFloat(slider.value) / max) * 100 : 0;
     const a = sign === '+' ? 0 : pct;
     const b = sign === '+' ? pct : 100;
-    sliderWrapper.style.setProperty('--track-bg', `linear-gradient(to right, var(--color-field) ${a}%, var(--color-fg) ${a}%, var(--color-fg) ${b}%, var(--color-field) ${b}%)`);
+    sliderWrapper.style.setProperty(
+      '--track-bg',
+      `linear-gradient(to right, var(--color-field) ${a}%, var(--color-fg) ${a}%, var(--color-fg) ${b}%, var(--color-field) ${b}%)`,
+    );
   }
 
   function syncSliderFromInput() {
@@ -1541,7 +1612,9 @@ export function Time(field) {
     if (parsed == null) return;
     sign = parsed < 0 ? '-' : '+';
     signBtn.textContent = sign;
-    slider.max = field.getDuration ? (field.getDuration() || 0) : (field.max ?? 3600);
+    slider.max = field.getDuration
+      ? field.getDuration() || 0
+      : (field.max ?? 3600);
     const dur = parseFloat(slider.max) || 0;
     const trackPos = parsed < 0 ? dur + parsed : parsed;
     slider.value = Math.max(0, Math.min(trackPos, dur));
@@ -1595,7 +1668,9 @@ export function Time(field) {
 
   function openPopup() {
     if (field.seek === false) return;
-    slider.max = field.getDuration ? (field.getDuration() || 0) : (field.max ?? 3600);
+    slider.max = field.getDuration
+      ? field.getDuration() || 0
+      : (field.max ?? 3600);
     if (field.getDuration && slider.max == 0) return;
     syncSliderFromInput();
     popup.hidden = false;
@@ -1606,15 +1681,21 @@ export function Time(field) {
     if (e.target !== slider && e.target !== signBtn) e.preventDefault();
   });
 
-  input.addEventListener('focus', () => { if (popup.hidden) openPopup(); });
+  input.addEventListener('focus', () => {
+    if (popup.hidden) openPopup();
+  });
 
   container.addEventListener('keydown', (evt) => {
-    if (evt.key === 'Escape' && !popup.hidden) { evt.stopPropagation(); closePopup(); }
+    if (evt.key === 'Escape' && !popup.hidden) {
+      evt.stopPropagation();
+      closePopup();
+    }
   });
 
   container.addEventListener('focusout', () => {
     requestAnimationFrame(() => {
-      if (!popup.hidden && !container.contains(document.activeElement)) closePopup();
+      if (!popup.hidden && !container.contains(document.activeElement))
+        closePopup();
     });
   });
 

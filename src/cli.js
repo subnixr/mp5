@@ -47,6 +47,7 @@ Options:
   -g WxH           Output resolution (default: ${DEFAULT_WIDTH}x${DEFAULT_HEIGHT})
   -p FILE          Load initial params from preset JSON file
   -P JSON          Pass initial params as inline JSON string
+  -c FILE          Use FILE as the app config (default: platform config dir / mp5.json)
   --help           Show this help
 
 Global Mouse/Keyboard shortcuts (visualizer mode):
@@ -86,7 +87,7 @@ Control bar widget interactions:
 `);
 }
 
-export function parseArgs(rawArgv) {
+export function parseArgs(rawArgv, config = {}) {
   const argv = rawArgv.filter((a) => a !== '--');
   const raw = {
     sketch: null,
@@ -101,6 +102,7 @@ export function parseArgs(rawArgv) {
     height: null,
     paramsFile: null,
     paramsJson: null,
+    configFile: null,
   };
 
   let i = 0;
@@ -128,6 +130,8 @@ export function parseArgs(rawArgv) {
       raw.paramsFile = argv[++i];
     } else if (a === '-P') {
       raw.paramsJson = argv[++i];
+    } else if (a === '-c') {
+      raw.configFile = argv[++i];
     } else if (a.startsWith('-')) {
       throw new Error(`unrecognized option '${a}'`);
     } else {
@@ -162,7 +166,9 @@ export function parseArgs(rawArgv) {
   }
 
   let initialParams = {};
-  let initialRendering = {};
+  // config render defaults sit at the bottom of the precedence stack; preset
+  // (below) and CLI flags (further below) both override these
+  let initialRendering = { ...(config.rendering ?? {}) };
 
   function applyPreset(preset, source) {
     if (typeof preset !== 'object' || Array.isArray(preset))
@@ -224,9 +230,10 @@ export function parseArgs(rawArgv) {
     output: raw.output || null,
     length: d,
     startTime: s ?? 0,
-    frameRate: raw.frameRate ?? FRAME_RATE,
-    width: raw.width ?? DEFAULT_WIDTH,
-    height: raw.height ?? DEFAULT_HEIGHT,
+    frameRate: raw.frameRate ?? config.rendering?.fps ?? FRAME_RATE,
+    width: raw.width ?? config.rendering?.width ?? DEFAULT_WIDTH,
+    height: raw.height ?? config.rendering?.height ?? DEFAULT_HEIGHT,
+    configFile: raw.configFile ?? null,
     initialParams,
     initialRendering: Object.keys(initialRendering).length
       ? initialRendering
