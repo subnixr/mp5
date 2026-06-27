@@ -53,6 +53,7 @@ Global Mouse/Keyboard shortcuts (preview mode):
   Space                     Play/Pause file, toggle mic input
   Return                    Toggle fullscreen
   Left/Right                Seek -10/+10 seconds
+  Shift+Left/Right          Seek -1/+1 frame (file/no-audio modes)
   Home/End                  Seek to start/end (file only)
   M                         Toggle mute
   Up/Down, WheelScroll      Volume up/down

@@ -93,6 +93,7 @@ export default function Engine(elem) {
   // them back via getParamsDefinitions in the same tick
   elem.flushParams = () => activeParams?.flush();
   elem.setInitialParams = (obj) => Object.assign(preservedParams, obj);
+  elem.getFrameRate = () => renderFps ?? 60;
   elem.setRenderFps = (fps) => {
     renderFps = fps;
   };

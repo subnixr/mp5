@@ -100,16 +100,16 @@ export default function Controls(elem) {
 
   const dom = {
     play: withEvents(elem.querySelector('[data-play]'), {
-      click: () => engine?.play(),
+      click: () => play(),
     }),
     pause: withEvents(elem.querySelector('[data-pause]'), {
-      click: () => engine?.pause(),
+      click: () => pause(),
     }),
     micOn: withEvents(elem.querySelector('[data-mic-on]'), {
-      click: () => engine?.listen(false),
+      click: () => listen(false),
     }),
     micOff: withEvents(elem.querySelector('[data-mic-off]'), {
-      click: () => engine?.listen(true),
+      click: () => listen(true),
     }),
     loop: withEvents(elem.querySelector('[data-loop]'), {
       click: () => engine?.loop(!engine?.getLoop()),
@@ -190,9 +190,41 @@ export default function Controls(elem) {
     },
   });
 
+  const osdSeek = osd.querySelector('[data-osd-seek]');
+  const osdIcon = osd.querySelector('[data-osd-icon] use');
+
   function showVolumeOSD(v) {
+    osd.removeAttribute('data-mode');
     osdVol.setLevel(v);
     osd.show(500);
+  }
+
+  function showSeekOSD(offset) {
+    const sign = offset < 0 ? '-' : '+';
+    osdSeek.textContent = `${sign}${formatTime(Math.abs(offset))}`;
+    osd.setAttribute('data-mode', 'seek');
+    osd.show();
+  }
+
+  function showIconOSD(icon) {
+    osdIcon.setAttribute('href', `#${icon}`);
+    osd.setAttribute('data-mode', 'icon');
+    osd.show(700);
+  }
+
+  function play() {
+    engine?.play();
+    showIconOSD('play');
+  }
+
+  function pause() {
+    engine?.pause();
+    showIconOSD('pause');
+  }
+
+  function listen(active) {
+    engine?.listen(active);
+    showIconOSD(active ? 'mic' : 'mic-off');
   }
 
   function updateDom() {
@@ -216,6 +248,35 @@ export default function Controls(elem) {
     dom.trackLength?.replaceChildren(dur ? formatTime(dur) : '');
   }
 
+  let seekTimer = null;
+  let seekBase = 0;
+  let seekAcc = 0;
+
+  function cancelSeek() {
+    clearTimeout(seekTimer);
+    seekTimer = null;
+    seekAcc = 0;
+    osd.hide();
+  }
+
+  function bufferSeek(step) {
+    if (engine?.getMode() !== 'file') return;
+    // accumulate keystrokes into one offset while the OSD is shown; the
+    // track is only seeked once a large-enough pause ends the burst
+    if (seekTimer === null) {
+      seekBase = engine?.getCurrentTime() ?? 0;
+      seekAcc = 0;
+    }
+    seekAcc += step;
+    showSeekOSD(seekAcc);
+    clearTimeout(seekTimer);
+    seekTimer = setTimeout(() => {
+      seekTimer = null;
+      osd.hide();
+      engine?.seek(seekBase + seekAcc);
+    }, 500);
+  }
+
   function bindShortcuts() {
     document.addEventListener('keyup', (evt) => {
       evt.preventDefault();
@@ -223,23 +284,33 @@ export default function Controls(elem) {
         elem.pin(!elem.classList.contains('pinned'));
       } else if (evt.code === 'Space') {
         if (engine?.getMode() === 'file') {
-          engine?.getPlaying() ? engine?.pause() : engine?.play();
+          engine?.getPlaying() ? pause() : play();
         } else {
-          engine?.listen(!engine?.getListening());
+          listen(!engine?.getListening());
         }
       } else if (evt.code === 'Enter') {
         window.api.toggleFullscreen();
+      } else if (evt.shiftKey && evt.code === 'ArrowLeft') {
+        if (engine?.getMode() !== 'mic') {
+          engine?.seek(engine?.getCurrentTime() - 1 / engine?.getFrameRate());
+        }
+      } else if (evt.shiftKey && evt.code === 'ArrowRight') {
+        if (engine?.getMode() !== 'mic') {
+          engine?.seek(engine?.getCurrentTime() + 1 / engine?.getFrameRate());
+        }
       } else if (evt.code === 'ArrowLeft') {
-        engine?.seek(engine?.getCurrentTime() - 10);
+        bufferSeek(-10);
       } else if (evt.code === 'ArrowRight') {
-        engine?.seek(engine?.getCurrentTime() + 10);
+        bufferSeek(10);
       } else if (evt.code === 'ArrowUp') {
         engine?.setVolume(engine?.getVolume() + 0.1);
       } else if (evt.code === 'ArrowDown') {
         engine?.setVolume(engine?.getVolume() - 0.1);
       } else if (evt.code === 'Home') {
+        cancelSeek();
         engine?.seek(0);
       } else if (evt.code === 'End') {
+        cancelSeek();
         engine?.seek(engine?.getDuration());
       } else if (evt.code === 'KeyM') {
         toggleMute();

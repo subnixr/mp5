@@ -72,7 +72,8 @@ The controls bar appears at the bottom of the window. It auto-hides after 3 seco
 | `Space`                     | Play/pause (file/no-audio) or toggle mic listening |
 | `Return`                    | Toggle fullscreen                                  |
 | `Left / Right`              | Seek −10 / +10 seconds                             |
-| `Home / End`                | Seek to start / end (file / no-audio)              |
+| `Shift+Left / Shift+Right`  | Seek −1 / +1 frame (file only)                     |
+| `Home / End`                | Seek to start / end (file only)                    |
 | `Up / Down`, `WheelScroll`  | Volume +/−                                         |
 | `M`                         | Toggle mute                                        |
 | `Ctrl+Space`, `Right-click` | Pin / unpin controls                               |
@@ -81,6 +82,14 @@ The controls bar appears at the bottom of the window. It auto-hides after 3 seco
 | `F10`                       | Open gallery window                                |
 | `F11`                       | Toggle fullscreen                                  |
 | `F12`                       | Open settings window                               |
+
+### On-screen display (OSD)
+
+A transient overlay centered in the window gives feedback for keyboard/wheel actions:
+
+- **Volume** — level bar on volume change, scroll, or mute toggle.
+- **Play / pause / mic** — matching icon when toggling playback or mic input.
+- **Seek** — accumulated offset (e.g. `+00:30`) while tapping `Left` / `Right`. Consecutive presses within 500 ms add up and the track is seeked once at the end of the burst; `Home` / `End` cancel a pending seek.
 
 ---
 
@@ -120,18 +129,18 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 
 ### Options
 
-| Flag              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `-f`              | Start fullscreen (preview only)                                          |
-| `-l`              | Loop audio (preview only)                                                |
-| `-o OUTPUT`       | Render to output file — activates render mode                            |
-| `-S [-][[HH:]MM:]SS[.mmm]` | Animation window start time (render only; default: 0)                    |
-| `-L [-][[HH:]MM:]SS[.mmm]` | Animation window length (render only; required if no AUDIO)              |
-| `-F FPS`          | Render frame rate (default: 60)                                          |
-| `-g WxH`          | Output resolution (default: 1920×1080); overrides `params.canvas()` hint |
-| `-p FILE`         | Load initial params (and optionally render settings) from a JSON preset file |
-| `-P JSON`         | Pass initial params as an inline JSON string                                 |
-| `--help`          | Show usage                                                                   |
+| Flag                       | Description                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `-f`                       | Start fullscreen (preview only)                                              |
+| `-l`                       | Loop audio (preview only)                                                    |
+| `-o OUTPUT`                | Render to output file — activates render mode                                |
+| `-S [-][[HH:]MM:]SS[.mmm]` | Animation window start time (render only; default: 0)                        |
+| `-L [-][[HH:]MM:]SS[.mmm]` | Animation window length (render only; required if no AUDIO)                  |
+| `-F FPS`                   | Render frame rate (default: 60)                                              |
+| `-g WxH`                   | Output resolution (default: 1920×1080); overrides `params.canvas()` hint     |
+| `-p FILE`                  | Load initial params (and optionally render settings) from a JSON preset file |
+| `-P JSON`                  | Pass initial params as an inline JSON string                                 |
+| `--help`                   | Show usage                                                                   |
 
 `-p` and `-P` can be combined; inline `-P` values override file `-p` values for the same keys.
 
