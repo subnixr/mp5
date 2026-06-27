@@ -97,6 +97,27 @@ export default function sketch(p, audio, params) {
     seconds: true,
     tip: 'seconds: true — raw decimal seconds. Supports negative values (offset from end).',
   });
+  const range = params(
+    'range',
+    { from: 10, to: 120 },
+    {
+      type: 'timerange',
+      label: 'Range',
+      max: 3600,
+      tip: 'timerange: a { from, to } pair (always). Both values may be negative (offset from end).\nF/T button switches to Skip/Length; popup has a polarity button per handle.',
+    },
+  );
+  const clip = params(
+    'clip',
+    { from: 0, to: 60 },
+    {
+      type: 'timerange',
+      toggle: false,
+      length: true,
+      label: 'Clip (locked)',
+      tip: 'length: true — starts in Skip/Length mode. No max → slider spans the track (or render length in mic).',
+    },
+  );
 
   params.group(
     'inputs',
@@ -117,6 +138,8 @@ export default function sketch(p, audio, params) {
     file,
     timeTC,
     timeSec,
+    range,
+    clip,
   );
 
   // ── GROUP 2: combo and grid ────────────────────────────────────
@@ -125,7 +148,9 @@ export default function sketch(p, audio, params) {
   const origin = params.combo(
     'origin',
     'Origin (combo)',
-    { tip: 'combo: groups params into a single horizontal row.\nDefault flex: auto for all but last, 1 for last.' },
+    {
+      tip: 'combo: groups params into a single horizontal row.\nDefault flex: auto for all but last, 1 for last.',
+    },
     params('ox', 260, { type: 'number', label: 'X', min: 0, max: 520 }),
     params('oy', 320, { type: 'number', label: 'Y', min: 0, max: 640 }),
   );
@@ -133,7 +158,9 @@ export default function sketch(p, audio, params) {
   const tagged = params.combo(
     'tagged',
     'Tagged (combo + flex)',
-    { tip: 'Explicit flex values: flex:2 makes Tag twice as wide as Val, flex:"auto" shrinks to content.' },
+    {
+      tip: 'Explicit flex values: flex:2 makes Tag twice as wide as Val, flex:"auto" shrinks to content.',
+    },
     params('tg_label', 'main', { type: 'text', label: 'Tag', flex: 2 }),
     params('tg_val', 50, {
       type: 'number',
@@ -149,7 +176,9 @@ export default function sketch(p, audio, params) {
   const cross = params.grid(
     'cross',
     2,
-    { tip: 'grid: arranges params in a fixed column layout (columns: 2 here).' },
+    {
+      tip: 'grid: arranges params in a fixed column layout (columns: 2 here).',
+    },
     params('cx', 260, { type: 'number', label: 'X', min: 0, max: 520 }),
     params('cy', 500, { type: 'number', label: 'Y', min: 0, max: 640 }),
     params('carm', 60, { type: 'number', label: 'Arm', min: 5, max: 200 }),
@@ -169,8 +198,13 @@ export default function sketch(p, audio, params) {
   params.group(
     'composites',
     'Combo & Grid',
-    { tip: 'combo: horizontal row of controls. grid: fixed column layout.\nBoth support tip and disabled options.' },
-    origin, tagged, cross, palette,
+    {
+      tip: 'combo: horizontal row of controls. grid: fixed column layout.\nBoth support tip and disabled options.',
+    },
+    origin,
+    tagged,
+    cross,
+    palette,
   );
 
   // ── GROUP 3: repeaters ─────────────────────────────────────────
@@ -200,7 +234,9 @@ export default function sketch(p, audio, params) {
     params.combo(
       'dot',
       'Dot',
-      { tip: 'Combo repeater: each row is a horizontal combo. Drag handles to reorder rows.' },
+      {
+        tip: 'Combo repeater: each row is a horizontal combo. Drag handles to reorder rows.',
+      },
       params('dx', 0, { type: 'number', label: 'X', flex: 1 }),
       params('dy', 0, { type: 'number', label: 'Y', flex: 1 }),
       params('dr', 15, {
@@ -234,8 +270,12 @@ export default function sketch(p, audio, params) {
   params.group(
     'repeaters',
     'Repeaters',
-    { tip: 'repeater: dynamic list of rows. Three variants: plain field, combo, grid.' },
-    sizes, dots, rects,
+    {
+      tip: 'repeater: dynamic list of rows. Three variants: plain field, combo, grid.',
+    },
+    sizes,
+    dots,
+    rects,
   );
 
   // ── SETUP & DRAW ───────────────────────────────────────────────

@@ -206,6 +206,43 @@ params('offset', -10, {
 | `seconds` | `true` = decimal seconds `[-]s`; `false` (default) = timecode `[-][[HH:]MM:]SS[.mmm]` |
 | `seek` | `false` to disable the scrub popup slider (default: popup opens on focus) |
 
+### `'timerange'`
+
+A pair of time values with a shared dual-handle scrub popup. Value is always an object `{ from, to }` (numbers in seconds). Negative values are offsets from the end. Focusing either field opens the popup; a `+`/`-` polarity button at each end of the slider toggles that handle between offset-from-start and offset-from-end.
+
+The control has two display modes, switched at runtime with the toggle (⇆) button after the second field:
+- **From / To** — two independent time values, both may be negative.
+- **Skip / Length** — the second field shows length (`to − from`, always positive) and only the left polarity button is shown.
+
+Either way the value is `{ from, to }`. The `length` option just sets the **initial** mode; `toggle: false` hides the button and locks the mode.
+
+```js
+// default — starts in From/To mode
+params('cue', { from: 0, to: 30 }, {
+  type: 'timerange',
+  label: 'Cue range',
+});
+
+// starts in Skip/Length mode, toggle locked off
+params('clip', { from: 5, to: 35 }, {
+  type: 'timerange',
+  length: true,
+  toggle: false,
+  label: 'Clip',
+});
+```
+
+The two handles always stay ordered (`from ≤ to`).
+
+| Opt | Description |
+| --- | ----------- |
+| `length` | `true` = start in Skip/Length mode; `false` (default) = start in From/To mode |
+| `toggle` | `false` to hide the mode-toggle button and lock the mode (default: shown) |
+| `min` | Slider lower bound, normalized positive seconds (default: `0`) |
+| `max` | Slider upper bound, normalized positive seconds. Default: track length when a file is loaded, else the render length (mic) |
+| `seconds` | `true` = decimal seconds; `false` (default) = timecode |
+| `seek` | `false` to disable the scrub popup (default: popup opens on focus) |
+
 ## Tooltips (`tip`)
 
 Any param, combo, grid, group, or repeater can carry a `tip` string. The settings window renders an ⓘ icon next to the label; hovering shows the tooltip.

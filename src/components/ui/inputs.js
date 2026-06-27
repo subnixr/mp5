@@ -862,6 +862,7 @@ function createControl(def) {
   if (def.type === 'image') return Image(def);
   if (def.type === 'textarea') return Textarea(def);
   if (def.type === 'time') return Time(def);
+  if (def.type === 'timerange') return TimeRange(def);
   if (def.type === 'repeater') return Repeater(def);
   if (def.type === 'combo') return Combo(def);
   if (def.type === 'grid') return Grid(def);
@@ -1076,6 +1077,343 @@ function fmtTimecode(s) {
     ? `${hours}:${String(mins).padStart(2, '0')}:${secStr}`
     : `${mins}:${secStr}`;
   return neg ? '-' + result : result;
+}
+
+export function TimeRange(field) {
+  let lengthMode = field.length === true;
+  const showToggle = field.toggle !== false;
+  const minVal = field.min ?? 0;
+  const fmt = field.seconds ? fmtSecs : fmtTimecode;
+
+  const container = document.createElement('div');
+  container.className = 'time-range';
+
+  const inputsRow = document.createElement('div');
+  inputsRow.className = 'time-range-inputs';
+
+  function makeField(placeholder) {
+    const wrap = document.createElement('div');
+    wrap.className = 'input';
+    const ctrl = document.createElement('div');
+    ctrl.className = 'control has-unit';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = placeholder;
+    inp.spellcheck = false;
+    inp.addEventListener('change', (e) => e.stopPropagation());
+    // the unit box doubles as the field label (from/to/skip/length)
+    const unit = document.createElement('div');
+    unit.className = 'unit-box';
+    unit.tabIndex = -1;
+    unit.style.cursor = 'default';
+    ctrl.appendChild(inp);
+    ctrl.appendChild(unit);
+    wrap.appendChild(ctrl);
+    return { wrap, inp, unit };
+  }
+
+  const negPlaceholder = field.seconds ? '[-]seconds' : '[-][[HH:]MM:]SS';
+  const posPlaceholder = field.seconds ? 'seconds' : '[[HH:]MM:]SS';
+  const { wrap: fromWrap, inp: fromInp, unit: fromUnit } = makeField(negPlaceholder);
+  const { wrap: toWrap, inp: toInp, unit: toUnit } = makeField(negPlaceholder);
+  inputsRow.appendChild(fromWrap);
+  inputsRow.appendChild(toWrap);
+
+  // runtime mode-toggle button shown after the second input
+  let toggleBtn = null;
+  if (showToggle) {
+    toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'tr-mode-toggle';
+    toggleBtn.appendChild(iconSpan('change'));
+    inputsRow.appendChild(toggleBtn);
+  }
+
+  const popup = document.createElement('div');
+  popup.className = 'tr-popup';
+  popup.hidden = true;
+
+  const popupRow = document.createElement('div');
+  popupRow.className = 'tr-popup-row';
+
+  function makeSignBtn() {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'time-sign';
+    b.textContent = '+';
+    return b;
+  }
+
+  const fromSignBtn = makeSignBtn();
+  const toSignBtn = makeSignBtn();
+
+  const trackWrapper = document.createElement('div');
+  trackWrapper.className = 'tr-track-wrapper';
+
+  function makeThumb() {
+    const t = document.createElement('input');
+    t.type = 'range';
+    t.className = 'tr-thumb';
+    t.min = minVal;
+    t.step = 'any';
+    t.value = minVal;
+    t.max = minVal;
+    return t;
+  }
+
+  const startThumb = makeThumb();
+  const endThumb = makeThumb();
+
+  trackWrapper.appendChild(startThumb);
+  trackWrapper.appendChild(endThumb);
+  popupRow.appendChild(fromSignBtn);
+  popupRow.appendChild(trackWrapper);
+  popupRow.appendChild(toSignBtn);
+  popup.appendChild(popupRow);
+
+  container.appendChild(inputsRow);
+  container.appendChild(popup);
+
+  let signFrom = '+';
+  let signTo = '+';
+
+  // undefined max → track length (file) or render length (mic), via field.getMax
+  function getMax() {
+    if (field.max != null) return field.max;
+    if (field.getMax) return field.getMax() || 0;
+    return 0;
+  }
+
+  // negative value = seconds before end → resolve to absolute track position
+  function resolveNeg(v, max) {
+    const pos = v < 0 ? max + v : v;
+    return Math.min(Math.max(minVal, pos), max);
+  }
+
+  // reflect the current mode in labels, placeholders, and the toggle/sign buttons
+  function applyModeUI() {
+    fromUnit.textContent = lengthMode ? 'skip' : 'from';
+    toUnit.textContent = lengthMode ? 'length' : 'to';
+    toInp.placeholder = lengthMode ? posPlaceholder : negPlaceholder;
+    toSignBtn.style.display = lengthMode ? 'none' : '';
+  }
+
+  // handle position → signed value, per the field's current sign
+  function signedFromHandle(pos, sign, max) {
+    return sign === '-' ? pos - max : pos;
+  }
+
+  function parseFrom() {
+    return parseTimecodeStr(fromInp.value);
+  }
+
+  function parseTo() {
+    const v = parseTimecodeStr(toInp.value);
+    if (v == null) return null;
+    return lengthMode && v < 0 ? null : v; // length is positive only
+  }
+
+  function updateGradient() {
+    const max = parseFloat(startThumb.max) || 0;
+    const range = max - minVal;
+    if (range <= 0) return;
+    const startPct = ((parseFloat(startThumb.value) - minVal) / range) * 100;
+    const endPct = ((parseFloat(endThumb.value) - minVal) / range) * 100;
+    trackWrapper.style.setProperty(
+      '--track-bg',
+      `linear-gradient(to right, var(--color-field) ${startPct}%, var(--color-fg) ${startPct}%, var(--color-fg) ${endPct}%, var(--color-field) ${endPct}%)`
+    );
+  }
+
+  // second field text from the two handle positions
+  function renderField2(startPos, endPos, max) {
+    if (lengthMode) {
+      const len = endPos - startPos;
+      toInp.value = len > 0 ? fmt(len) : '';
+    } else {
+      toInp.value = fmt(signedFromHandle(endPos, signTo, max));
+    }
+  }
+
+  function getValue() {
+    const from = parseFrom();
+    let to;
+    if (lengthMode) {
+      const len = parseTo();
+      to = from != null && len != null ? from + len : null;
+    } else {
+      to = parseTo();
+    }
+    return { from: from ?? null, to: to ?? null };
+  }
+
+  function emitChange() {
+    emit(container, getValue());
+  }
+
+  // position both handles from the current text values
+  function syncHandles() {
+    const max = getMax();
+    startThumb.max = max;
+    endThumb.max = max;
+    const from = parseFrom() ?? minVal;
+    const startPos = resolveNeg(from, max);
+    let endPos;
+    if (lengthMode) {
+      const len = parseTo();
+      endPos = len != null ? startPos + len : (max > minVal ? max : startPos);
+    } else {
+      const to = parseTo();
+      endPos = to != null ? resolveNeg(to, max) : (max > minVal ? max : startPos);
+    }
+    endPos = Math.min(Math.max(endPos, startPos), max);
+    startThumb.value = startPos;
+    endThumb.value = endPos;
+    updateGradient();
+  }
+
+  startThumb.addEventListener('input', () => {
+    const max = getMax();
+    const startPos = parseFloat(startThumb.value);
+    let endPos = parseFloat(endThumb.value);
+    if (startPos > endPos) { endPos = startPos; endThumb.value = endPos; }
+    fromInp.value = fmt(signedFromHandle(startPos, signFrom, max));
+    renderField2(startPos, endPos, max);
+    updateGradient();
+    emitChange();
+  });
+
+  endThumb.addEventListener('input', () => {
+    const max = getMax();
+    const startPos = parseFloat(startThumb.value);
+    let endPos = parseFloat(endThumb.value);
+    if (endPos < startPos) { endPos = startPos; endThumb.value = endPos; }
+    renderField2(startPos, endPos, max);
+    updateGradient();
+    emitChange();
+  });
+
+  fromInp.addEventListener('input', () => {
+    const from = parseFrom();
+    if (from == null) return;
+    const max = getMax();
+    signFrom = from < 0 ? '-' : '+';
+    fromSignBtn.textContent = signFrom;
+    const startPos = resolveNeg(from, max);
+    let endPos = parseFloat(endThumb.value);
+    if (startPos > endPos) endPos = startPos;
+    startThumb.value = startPos;
+    endThumb.value = endPos;
+    renderField2(startPos, endPos, max);
+    updateGradient();
+    emitChange();
+  });
+
+  toInp.addEventListener('input', () => {
+    const to = parseTo();
+    if (to == null) return;
+    const max = getMax();
+    const startPos = parseFloat(startThumb.value);
+    let endPos;
+    if (lengthMode) {
+      endPos = Math.min(startPos + to, max);
+    } else {
+      signTo = to < 0 ? '-' : '+';
+      toSignBtn.textContent = signTo;
+      endPos = Math.max(resolveNeg(to, max), startPos);
+    }
+    endThumb.value = endPos;
+    updateGradient();
+    emitChange();
+  });
+
+  fromInp.addEventListener('blur', () => {
+    const v = parseFrom();
+    if (v != null) fromInp.value = fmt(v);
+  });
+
+  toInp.addEventListener('blur', () => {
+    const v = parseTo();
+    if (v != null) toInp.value = fmt(v);
+  });
+
+  fromSignBtn.addEventListener('click', () => {
+    const max = getMax();
+    signFrom = signFrom === '+' ? '-' : '+';
+    fromSignBtn.textContent = signFrom;
+    fromInp.value = fmt(signedFromHandle(parseFloat(startThumb.value), signFrom, max));
+    emitChange();
+  });
+
+  toSignBtn.addEventListener('click', () => {
+    const max = getMax();
+    signTo = signTo === '+' ? '-' : '+';
+    toSignBtn.textContent = signTo;
+    toInp.value = fmt(signedFromHandle(parseFloat(endThumb.value), signTo, max));
+    emitChange();
+  });
+
+  // switch From/To ↔ Skip/Length at runtime; value { from, to } is preserved
+  function toggleMode() {
+    const val = getValue();
+    lengthMode = !lengthMode;
+    applyModeUI();
+    container.setValue(val);
+  }
+
+  if (toggleBtn) toggleBtn.addEventListener('click', toggleMode);
+
+  function openPopup() {
+    if (field.seek === false) return;
+    if (getMax() <= minVal) return;
+    syncHandles();
+    popup.hidden = false;
+    positionPopup(container, popup);
+  }
+
+  function closePopup() {
+    popup.hidden = true;
+  }
+
+  fromInp.addEventListener('focus', () => { if (popup.hidden) openPopup(); });
+  toInp.addEventListener('focus', () => { if (popup.hidden) openPopup(); });
+
+  popup.addEventListener('mousedown', (e) => {
+    if (e.target !== startThumb && e.target !== endThumb
+      && e.target !== fromSignBtn && e.target !== toSignBtn) e.preventDefault();
+  });
+
+  container.addEventListener('keydown', (evt) => {
+    if (evt.key === 'Escape' && !popup.hidden) { evt.stopPropagation(); closePopup(); }
+  });
+
+  container.addEventListener('focusout', () => {
+    requestAnimationFrame(() => {
+      if (!popup.hidden && !container.contains(document.activeElement)) closePopup();
+    });
+  });
+
+  container.getValue = getValue;
+
+  container.setValue = ({ from, to } = {}) => {
+    signFrom = from != null && from < 0 ? '-' : '+';
+    fromSignBtn.textContent = signFrom;
+    fromInp.value = from != null ? fmt(from) : '';
+    if (lengthMode) {
+      toInp.value = from != null && to != null ? fmt(to - from) : '';
+    } else {
+      signTo = to != null && to < 0 ? '-' : '+';
+      toSignBtn.textContent = signTo;
+      toInp.value = to != null ? fmt(to) : '';
+    }
+    syncHandles();
+    emitChange();
+  };
+
+  applyModeUI();
+  if (field.value != null) container.setValue(field.value);
+
+  return container;
 }
 
 export function Time(field) {

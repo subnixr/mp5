@@ -31,6 +31,15 @@ function parseTimecode(str) {
 
 let currentDefs = window.api.definitions ?? { groups: [], fields: [] };
 
+// undefined-max resolution for timerange controls: track length when a file is
+// loaded, otherwise the configured render length (mic mode)
+function trackOrRenderMax() {
+  const dur = currentDefs.audioDuration ?? 0;
+  if (dur > 0) return dur;
+  const len = renderPanel?.getValues?.().length;
+  return len != null ? len : (parseTimecode(MIC_DEFAULT_LENGTH) ?? 0);
+}
+
 const panel = ParamsPanel(document.querySelector('#settings'));
 const renderPanel = RenderingPanel(document.querySelector('#rendering'));
 
@@ -132,15 +141,12 @@ function RenderingPanel(elem) {
   const fpsCtrl = Input.Number({ value: 60, min: 1, max: 120, unit: 'fps' });
 
   const getDuration = () => currentDefs.audioDuration ?? 0;
-  const skipCtrl = Input.Time({ value: '', getDuration });
-  const skipInput = skipCtrl.querySelector('input');
-
-  const lengthCtrl = Input.Time({
-    value: isMic ? MIC_DEFAULT_LENGTH : '',
-    getDuration,
-    seek: false,
+  const timeRangeCtrl = Input.TimeRange({
+    length: true,
+    toggle: !isMic, // mic: lock to skip/length, no toggle
+    seek: !isMic,
+    getMax: trackOrRenderMax,
   });
-  const lengthInput = lengthCtrl.querySelector('input');
 
   const formatCtrl = Input.Select({ value: 'mov', options: ['mp4', 'mov', 'webm'] });
   const formatSelect = formatCtrl.querySelector('select');
@@ -186,17 +192,13 @@ function RenderingPanel(elem) {
 
   const row3 = document.createElement('div');
   row3.className = 'rp-row';
-  row3.appendChild(makeField('Skip', skipCtrl));
-
-  const row4 = document.createElement('div');
-  row4.className = 'rp-row';
-  row4.appendChild(makeField('Length', lengthCtrl));
+  row3.appendChild(makeField('Range', timeRangeCtrl));
 
   const group = Input.Group({
     title: 'rendering',
     open: true,
     noToggle: true,
-    children: [row1, row2, row3, row4, ffmpegDiv],
+    children: [row1, row2, row3, ffmpegDiv],
   });
   elem.appendChild(group);
 
@@ -223,10 +225,9 @@ function RenderingPanel(elem) {
     const w = widthCtrl.getValue() || '?';
     const h = heightCtrl.getValue() || '?';
     const fps = fpsCtrl.getValue() || 60;
-    const skipStr = skipInput.value.trim();
-    const lenStr = lengthInput.value.trim();
-    const skip = skipStr ? parseTimecode(skipStr) : null;
-    const length = lenStr ? parseTimecode(lenStr) : null;
+    const { from, to } = timeRangeCtrl.getValue();
+    const skip = from;
+    const length = from != null && to != null ? to - from : null;
     const audio = currentDefs.audioBase ?? null;
     ffmpegComp.updateFixed({ w, h, fps, audio, skip, length, output: '' });
   }
@@ -234,8 +235,7 @@ function RenderingPanel(elem) {
   widthCtrl.addEventListener('change', updatePreview);
   heightCtrl.addEventListener('change', updatePreview);
   fpsCtrl.addEventListener('change', updatePreview);
-  skipInput.addEventListener('input', updatePreview);
-  lengthInput.addEventListener('input', updatePreview);
+  timeRangeCtrl.addEventListener('change', updatePreview);
 
   // mirror edits back to the visualizer so rendering state outlives this window
   // setValue emits 'change', so applyValues would otherwise echo programmatic
@@ -249,8 +249,8 @@ function RenderingPanel(elem) {
 
   for (const ctrl of [widthCtrl, heightCtrl, fpsCtrl, formatCtrl])
     ctrl.addEventListener('change', notifyRendering);
-  for (const input of [skipInput, lengthInput, ffmpegExtra])
-    input.addEventListener('input', notifyRendering);
+  timeRangeCtrl.addEventListener('change', notifyRendering);
+  ffmpegExtra.addEventListener('input', notifyRendering);
 
   updatePreview();
 
@@ -260,10 +260,9 @@ function RenderingPanel(elem) {
       height: heightCtrl.getValue() || 1080,
       fps: fpsCtrl.getValue() || 60,
     };
-    const skip = skipInput.value.trim();
-    const len = lengthInput.value.trim();
-    if (skip) vals.skip = skip;
-    if (len) vals.length = len;
+    const { from, to } = timeRangeCtrl.getValue();
+    if (from != null) vals.skip = from;
+    if (from != null && to != null) vals.length = to - from;
     const extra = ffmpegExtra.value.trim();
     if (extra) vals.ffmpegExtraArgs = extra;
     return vals;
@@ -281,8 +280,15 @@ function RenderingPanel(elem) {
     if (obj.width != null) widthCtrl.setValue(obj.width);
     if (obj.height != null) heightCtrl.setValue(obj.height);
     if (fps != null) fpsCtrl.setValue(fps);
-    skipCtrl.setValue(skip ?? '');
-    lengthCtrl.setValue(obj.length ?? (isMic ? MIC_DEFAULT_LENGTH : ''));
+    // default skip to 0 and length to the full track (mic has no track, so use
+    // the fixed mic default there)
+    const defaultLength = isMic ? parseTimecode(MIC_DEFAULT_LENGTH) : (getDuration() || null);
+    const skipVal = skip != null ? (typeof skip === 'number' ? skip : parseTimecode(skip)) : 0;
+    const lenVal = obj.length != null ? (typeof obj.length === 'number' ? obj.length : parseTimecode(String(obj.length))) : defaultLength;
+    timeRangeCtrl.setValue({
+      from: skipVal,
+      to: lenVal != null ? skipVal + lenVal : null,
+    });
     if (ffmpeg != null) {
       ffmpegExtra.value = ffmpeg;
       syncFormatSelect(ffmpeg);
@@ -319,6 +325,11 @@ function ParamsPanel(elem) {
   }
 
   function register(def) {
+    // inject the dynamic max so an undefined `max` resolves to track/render
+    // length (def comes from IPC and is frozen, so clone rather than mutate)
+    if (def.type === 'timerange' && def.max == null) {
+      def = { ...def, getMax: trackOrRenderMax };
+    }
     const field = Input.Field(def, (key, value) => {
       window.api.updateParam(key, value);
       triggerDisabled(key, value);
