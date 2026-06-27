@@ -38,7 +38,7 @@ Arguments:
   AUDIO        Path to audio file (${[...AUDIO_EXTS].join(', ')})
 
 Options:
-  -f               Start in fullscreen (preview mode only)
+  -f               Start in fullscreen (visualizer mode only)
   -l               Start in loop mode (only available with AUDIO)
   -S [-][[HH:]MM:]SS[.mmm]  Animation window start time (render mode only; default: 0)
   -L [-][[HH:]MM:]SS[.mmm]  Animation window length (render mode only; required if no AUDIO)
@@ -49,7 +49,7 @@ Options:
   -P JSON          Pass initial params as inline JSON string
   --help           Show this help
 
-Global Mouse/Keyboard shortcuts (preview mode):
+Global Mouse/Keyboard shortcuts (visualizer mode):
   Space                     Play/Pause file, toggle mic input
   Return                    Toggle fullscreen
   Left/Right                Seek -10/+10 seconds
@@ -220,7 +220,7 @@ export function parseArgs(rawArgv) {
     audioPath: raw.audio || null,
     loop: raw.loop || null,
     fullscreen: raw.fullscreen,
-    mode: raw.output ? 'render' : 'preview',
+    mode: raw.output ? 'render' : 'visualizer',
     output: raw.output || null,
     length: d,
     startTime: s ?? 0,

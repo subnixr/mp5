@@ -4,7 +4,7 @@
 
 MP5 is an Electron app that runs p5.js sketches driven by time and optional audio analysis. It has two operating modes:
 
-- **Preview** — interactive window with audio playback and a controls overlay
+- **Visualizer** — interactive window with audio playback and a controls overlay
 - **Render** — headless export to a video file via ffmpeg, frame by frame
 
 Pass a directory as the sketch path to activate **gallery mode**: all sketch items in the folder are loaded as a playlist you can cycle through with `Tab` / `Shift+Tab`. See [gallery.md](gallery.md) for details.
@@ -19,17 +19,17 @@ Supported formats: mp3, ogg, wav, aac, flac, m4a.
 
 ### Mic input
 
-The sketch receives live frequency analysis from the system microphone. There is no track, no duration, and no seek. Time is wall-clock time. Mic mode is only available in preview; rendering from the settings window while in mic mode produces a video with no audio stream. Starting a render in mic mode shows a confirmation dialog before proceeding.
+The sketch receives live frequency analysis from the system microphone. There is no track, no duration, and no seek. Time is wall-clock time. Mic mode is only available in visualizer mode; rendering from the settings window while in mic mode produces a video with no audio stream. Starting a render in mic mode shows a confirmation dialog before proceeding.
 
 Switching from mic back to file resumes the previously loaded file. Switching from file to mic stops playback but keeps the file loaded so it can be resumed.
 
 ### No audio
 
-When no audio source is active, `audio.currentTime()` is driven by a virtual clock — a wall-clock timer that starts paused and supports play, pause, and seek. The sketch receives no frequency data (spectrum returns null, all band values return 0). This mode works in both preview and render.
+When no audio source is active, `audio.currentTime()` is driven by a virtual clock — a wall-clock timer that starts paused and supports play, pause, and seek. The sketch receives no frequency data (spectrum returns null, all band values return 0). This mode works in both visualizer and render.
 
 ---
 
-## Controls overlay (preview)
+## Controls overlay (visualizer)
 
 The controls bar appears at the bottom of the window. It auto-hides after 3 seconds of mouse inactivity and reappears on mouse move. It can be pinned so it stays visible permanently.
 
@@ -90,6 +90,7 @@ A transient overlay centered in the window gives feedback for keyboard/wheel act
 - **Volume** — level bar on volume change, scroll, or mute toggle.
 - **Play / pause / mic** — matching icon when toggling playback or mic input.
 - **Seek** — accumulated offset (e.g. `+00:30`) while tapping `Left` / `Right`. Consecutive presses within 500 ms add up and the track is seeked once at the end of the burst; `Home` / `End` cancel a pending seek.
+- **Window size** — current `W×H` shown while hovering the top-right hot corner, or briefly when the window resizes. Click the hot corner or the OSD to switch to edit mode (the readout turns into a text box in place): type `W×H` (or `WxH`) and press `Enter` to resize the window, `Escape` to cancel.
 
 ---
 
@@ -131,8 +132,8 @@ Both arguments are optional and can be given in any order. A `.js` or `.zip` fil
 
 | Flag                       | Description                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------- |
-| `-f`                       | Start fullscreen (preview only)                                              |
-| `-l`                       | Loop audio (preview only)                                                    |
+| `-f`                       | Start fullscreen (visualizer only)                                              |
+| `-l`                       | Loop audio (visualizer only)                                                    |
 | `-o OUTPUT`                | Render to output file — activates render mode                                |
 | `-S [-][[HH:]MM:]SS[.mmm]` | Animation window start time (render only; default: 0)                        |
 | `-L [-][[HH:]MM:]SS[.mmm]` | Animation window length (render only; required if no AUDIO)                  |
@@ -201,10 +202,10 @@ While rendering, a progress window shows the current frame count and a cancel bu
 # Run with no arguments
 mp5
 
-# Preview sketch with audio
+# Run visualizer with sketch and audio
 mp5 sketch.js track.mp3
 
-# Preview fullscreen, looping
+# Run visualizer fullscreen, looping
 mp5 sketch.js track.mp3 -f -l
 
 # Render to video (length derived from audio duration)
@@ -225,7 +226,7 @@ mp5 sketch.js track.mp3 -P '{"speed": 2.5, "color": "#ff0000"}'
 # Load a structured preset (params + render settings)
 mp5 sketch.js track.mp3 -p preset.json
 
-# Preview a zipped sketch with assets
+# Run visualizer with a zipped sketch
 mp5 sketch.zip track.mp3
 
 # Render a zipped sketch

@@ -1,5 +1,5 @@
 import Bar from './bar.js';
-import { Label } from '../../../components/ui/inputs.js';
+import { Label, Text } from '../../../components/ui/inputs.js';
 import OSD from '../../../components/ui/osd.js';
 
 import sheet from './controls.css' with { type: 'css' };
@@ -216,6 +216,76 @@ export default function Controls(elem) {
     osd.show(700);
   }
 
+  const sizeCorner = document.querySelector('[data-size-corner]');
+  const sizeCtrl = Text({ value: '' });
+  const sizeInput = sizeCtrl.querySelector('input');
+  sizeInput.readOnly = true;
+  osd.querySelector('[data-osd-size]').appendChild(sizeCtrl);
+
+  function currentSize() {
+    return `${window.innerWidth}x${window.innerHeight}`;
+  }
+
+  function showSizeOSD(timeout) {
+    if (!osd.hasAttribute('data-editing')) sizeInput.value = currentSize();
+    osd.setAttribute('data-mode', 'size');
+    osd.show(timeout);
+  }
+
+  function enterSizeEdit() {
+    sizeInput.value = currentSize();
+    sizeInput.readOnly = false;
+    osd.setAttribute('data-mode', 'size');
+    osd.setAttribute('data-editing', '');
+    osd.show();
+    sizeInput.focus();
+    sizeInput.select();
+  }
+
+  function exitSizeEdit(submit) {
+    if (!osd.hasAttribute('data-editing')) return;
+    osd.removeAttribute('data-editing');
+    sizeInput.readOnly = true;
+
+    if (submit) {
+      const match = sizeInput.value.match(/(\d+)\s*[×x\s]\s*(\d+)/);
+      if (match) {
+        const w = parseInt(match[1], 10);
+        const h = parseInt(match[2], 10);
+        if (w > 0 && h > 0) window.api.resizeWindow(w, h);
+      }
+    }
+
+    osd.hide(true);
+  }
+
+  function bindSizeOSD() {
+    sizeCorner.addEventListener('mouseenter', () => {
+      if (!osd.hasAttribute('data-editing')) showSizeOSD();
+    });
+    sizeCorner.addEventListener('mouseleave', () => {
+      if (!osd.hasAttribute('data-editing')) osd.hide(true);
+    });
+    sizeCorner.addEventListener('click', enterSizeEdit);
+
+    osd.querySelector('[data-osd-size]').addEventListener('click', () => {
+      if (!osd.hasAttribute('data-editing')) enterSizeEdit();
+    });
+
+    sizeInput.addEventListener('keydown', (evt) => evt.stopPropagation());
+    sizeInput.addEventListener('keyup', (evt) => {
+      evt.stopPropagation();
+      if (evt.key === 'Enter') exitSizeEdit(true);
+      else if (evt.key === 'Escape') exitSizeEdit(false);
+    });
+    sizeInput.addEventListener('blur', () => exitSizeEdit(false));
+
+    window.addEventListener('resize', () => {
+      if (osd.hasAttribute('data-editing')) return;
+      showSizeOSD(1000);
+    });
+  }
+
   function play() {
     engine?.play();
     showIconOSD('play');
@@ -260,7 +330,7 @@ export default function Controls(elem) {
     clearTimeout(seekTimer);
     seekTimer = null;
     seekAcc = 0;
-    osd.hide();
+    osd.hide(true);
   }
 
   function bufferSeek(step) {
@@ -276,7 +346,7 @@ export default function Controls(elem) {
     clearTimeout(seekTimer);
     seekTimer = setTimeout(() => {
       seekTimer = null;
-      osd.hide();
+      osd.hide(true);
       engine?.seek(seekBase + seekAcc);
     }, 500);
   }
@@ -393,6 +463,7 @@ export default function Controls(elem) {
   }
 
   bindShortcuts();
+  bindSizeOSD();
   setupCursorHide();
   elem.style.display = '';
   return elem;

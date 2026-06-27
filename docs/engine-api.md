@@ -32,13 +32,13 @@ Always get time from `audio.currentTime()`, not from `p.millis()`. The source of
 
 | Mode               | `currentTime()` source                                         |
 | ------------------ | -------------------------------------------------------------- |
-| File — preview     | Track playback position (pauses, seeks correctly)              |
+| File — visualizer  | Track playback position (pauses, seeks correctly)              |
 | File — render      | `startTime + (frameCount − 1) / fps` (deterministic)           |
 | Mic                | Wall-clock time (`p.millis() / 1000`)                          |
-| No audio — preview | Virtual clock: starts paused at 0, responds to play/pause/seek |
+| No audio — visualizer | Virtual clock: starts paused at 0, responds to play/pause/seek |
 | No audio — render  | `startTime + (frameCount − 1) / fps` (same as file render)     |
 
-This ensures file-mode and no-audio-render animations are deterministic and react correctly to seek/pause in preview.
+This ensures file-mode and no-audio-render animations are deterministic and react correctly to seek/pause in visualizer mode.
 
 ---
 
@@ -86,7 +86,7 @@ Named bands:
 Measures spectral flux in a frequency band — the sudden positive increase in energy between frames. Returns 0 when there is no increase, higher values on transients (kicks, snares, hats). Call once to create the detector, then call the returned function every frame.
 
 ```js
-// preview / mic
+// visualizer / mic
 const detector = audio.transient(lo, hi, (w = 15));
 
 // render mode — accepts an extra lookahead parameter
@@ -270,7 +270,7 @@ p.draw = function () {
 };
 ```
 
-### Time jump callback (preview/file only)
+### Time jump callback (visualizer/file only)
 
 Fires when the track is seeked backward. Use to reset stateful animation variables that depend on track position. No-op in render mode.
 

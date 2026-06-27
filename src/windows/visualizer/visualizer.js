@@ -3,7 +3,6 @@ import ErrorBar from './components/errorBar.js';
 import Engine from '../../components/engine/index.js';
 import { fromNested } from '../../components/engine/preset.js';
 import Controls from './components/controls.js';
-import WindowSize from './components/windowSize.js';
 import { handleErrors } from '../error.js';
 
 import eq from './sketches/eq.js';
@@ -17,11 +16,6 @@ const loader = Loader(document.querySelector('#loader'));
 const errorBar = ErrorBar(document.querySelector('#error-bar'));
 const engine = Engine(document.querySelector('#engine'));
 const controls = Controls(document.querySelector('#controls'));
-const windowSize = WindowSize(document.querySelector('#window-size'));
-
-windowSize.addEventListener('resize-request', (evt) => {
-  window.api.resizeWindow(evt.detail.w, evt.detail.h);
-});
 
 let gallery = null;
 let isSwitching = false;

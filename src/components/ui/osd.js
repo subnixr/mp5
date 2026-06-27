@@ -15,9 +15,9 @@ export default function OSD(elem) {
     }
   };
 
-  elem.hide = () => {
+  elem.hide = (force) => {
     clearTimeout(timer);
-    if (hovered) return;
+    if (hovered && !force) return;
     elem.classList.add('hidden');
   };
 

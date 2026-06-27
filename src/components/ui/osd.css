@@ -41,6 +41,11 @@
   color: #ffffff;
 }
 
+.osd[data-mode='seek'] {
+  cursor: default;
+  user-select: none;
+}
+
 .osd[data-mode='seek'] [data-osd-seek] {
   display: block;
 }
@@ -66,4 +71,39 @@
 
 .osd[data-mode='icon'] [data-osd-vol] {
   display: none;
+}
+
+.osd [data-osd-size] {
+  display: none;
+}
+
+.osd[data-mode='size'] [data-osd-vol] {
+  display: none;
+}
+
+.osd[data-mode='size'] [data-osd-size] {
+  display: block;
+}
+
+.osd [data-osd-size] .control {
+  justify-content: center;
+}
+
+/* one element for both states: in display it reads as plain text, in edit the
+   field background + border appear. same element = text never moves */
+.osd [data-osd-size] .control input {
+  field-sizing: content;
+  min-width: 6rem;
+  text-align: center;
+  font-size: 3.2rem;
+  color: #ffffff;
+  background: transparent;
+  border-color: transparent;
+  cursor: pointer;
+}
+
+.osd[data-editing] [data-osd-size] .control input {
+  background: var(--color-field);
+  border-color: var(--color-border);
+  cursor: text;
 }

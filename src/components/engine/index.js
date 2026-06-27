@@ -61,7 +61,7 @@ export default function Engine(elem) {
   let startTime = 0;
   let currentSketchFn = null; // stored so loadMic can reload the sketch with correct audio
   let activeAudio = null; // audio object of the current front sketch
-  let activeVirtualClock = null; // set when no audio source is active in preview mode
+  let activeVirtualClock = null; // set when no audio source is active in visualizer mode
   let activeParams = null; // params instance of the current front sketch
   let preservedParams = {}; // param values persisted across sketch loads
 
