@@ -1066,6 +1066,14 @@ export function Group(def, register = null, depth = 0) {
   return details;
 }
 
+function onScrollAway(container, close) {
+  function handler(evt) {
+    if (!container.contains(evt.target)) close();
+  }
+  window.addEventListener('scroll', handler, { capture: true, passive: true });
+  return () => window.removeEventListener('scroll', handler, true);
+}
+
 function positionPopup(anchor, popup) {
   const rect = anchor.getBoundingClientRect();
   const popupHeight = popup.offsetHeight;
@@ -1463,16 +1471,21 @@ export function TimeRange(field) {
     if (v != null) toInp.value = fmtTo(v);
   });
 
+  let cleanupScroll = null;
+
   function openPopup() {
     if (field.seek === false) return;
     if (getMax() <= minVal) return;
     syncHandles();
     popup.hidden = false;
     positionPopup(container, popup);
+    cleanupScroll = onScrollAway(container, closePopup);
   }
 
   function closePopup() {
     popup.hidden = true;
+    cleanupScroll?.();
+    cleanupScroll = null;
   }
 
   fromInp.addEventListener('focus', () => {
@@ -1662,8 +1675,12 @@ export function Time(field) {
     if (parsed != null) input.value = fmt(parsed);
   });
 
+  let cleanupScroll = null;
+
   function closePopup() {
     popup.hidden = true;
+    cleanupScroll?.();
+    cleanupScroll = null;
   }
 
   function openPopup() {
@@ -1675,6 +1692,7 @@ export function Time(field) {
     syncSliderFromInput();
     popup.hidden = false;
     positionPopup(container, popup);
+    cleanupScroll = onScrollAway(container, closePopup);
   }
 
   popup.addEventListener('mousedown', (e) => {
