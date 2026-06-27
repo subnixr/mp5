@@ -89,8 +89,8 @@ Both positional arguments are optional and order-independent. A `.js` or `.zip` 
 | `Ctrl+Space`, right-click    | Pin / unpin controls                               |
 | `Tab` / `Shift+Tab`          | Next / previous sketch (gallery mode)              |
 | `Ctrl+R`                     | Reload window                                      |
-| `F10`                        | Open gallery window                                |
-| `F12`                        | Open settings window                               |
+| `F10`                        | Open gallery window; focus if open, close if focused |
+| `F12`                        | Open settings window; focus if open, close if focused |
 
 The controls bar at the bottom mirrors these actions with clickable widgets (input switch, play/loop, seek/spectrum bar, volume, params, gallery, sketch picker, fullscreen). It auto-hides after 3s and can be pinned.
 

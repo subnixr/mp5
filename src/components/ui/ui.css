@@ -85,10 +85,16 @@
 /* --- Group label --- */
 
 .group-title {
-  position: absolute;
-  top: -0.6em;
-  left: 0.5em;
-  right: 0;
+  position: sticky;
+  top: -0.6rem;
+  z-index: 1;
+  background: linear-gradient(
+    to bottom,
+    var(--color-bg) calc(50% - 1.5px),
+    var(--color-border) calc(50% - 1.5px),
+    var(--color-border) calc(50% - 0.5px),
+    var(--color-bg) calc(50% - 0.5px)
+  );
   padding: 0;
   color: var(--color-fg);
   text-transform: uppercase;
@@ -110,7 +116,7 @@
 .group-title::before {
   content: '▼ ';
   background: var(--color-bg);
-  padding-left: 0.4em;
+  margin-left: 0.4em;
 }
 
 .group-title > span {
@@ -122,12 +128,25 @@
   content: '▶ ';
 }
 
+.group[open] .group-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: calc(50% - 1.5px);
+  bottom: 0;
+  border-left: 1px solid var(--color-border);
+}
+
 .group[data-no-toggle] .group-title {
   cursor: default;
 }
 
 .group[data-no-toggle] .group-title::before {
   content: none;
+}
+
+.group[data-no-toggle] .group-title > span {
+  margin-left: 0.4em;
 }
 
 /* --- Repeater --- */
@@ -467,7 +486,7 @@
   border: 1px solid var(--color-border);
 }
 
-.control:has(.file-btn).has-value::after {
+.control:has(.file-btn).has-value:not(.file-no-clear)::after {
   display: none;
 }
 
@@ -885,12 +904,12 @@
 }
 
 .group-tip {
-  position: relative;
-  top: -0.2rem;
   margin-left: auto;
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   background: var(--color-bg);
+  position: relative;
+  top: -1px;
 }
 
 /* --- Tip popup --- */

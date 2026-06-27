@@ -495,19 +495,21 @@ export function File(field) {
 
   let currentPath = field.value ?? null;
 
+  async function pickFile() {
+    const result = await window.api.requestFile(field.key);
+    if (result?.path) {
+      update(result.path);
+      emit(container, result.path);
+    }
+  }
+
   function update(path) {
     currentPath = path;
     btn.textContent = path ? path.split('/').pop() : '';
     container.classList.toggle('has-value', !!path);
   }
 
-  btn.addEventListener('click', async () => {
-    const result = await window.api.requestFile(field.key);
-    if (result?.path) {
-      update(result.path);
-      emit(container, result.path);
-    }
-  });
+  btn.addEventListener('click', pickFile);
 
   clearBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -523,8 +525,9 @@ export function File(field) {
     }
   });
 
+  if (field.noClear) container.classList.add('file-no-clear');
   container.appendChild(btn);
-  container.appendChild(clearBtn);
+  if (!field.noClear) container.appendChild(clearBtn);
 
   update(currentPath);
 

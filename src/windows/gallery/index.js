@@ -5,7 +5,7 @@ import { relayConsole } from '../error.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export function openGalleryWindow(visWin) {
+export function openGalleryWindow(visWin, theme) {
   const win = new BrowserWindow({
     width: 640,
     minWidth: 400,
@@ -26,7 +26,7 @@ export function openGalleryWindow(visWin) {
 
   relayConsole(win.webContents, 'gallery');
 
-  win.loadFile(path.join(__dirname, 'gallery.html'));
+  win.loadFile(path.join(__dirname, 'gallery.html'), theme ? { query: { theme } } : undefined);
 
   return win;
 }

@@ -1,7 +1,11 @@
 import * as Input from '../../components/ui/inputs.js';
+import { applyTheme, DEFAULT_THEME } from '../../components/theme.js';
 
 import sheet from './gallery.css' with { type: 'css' };
 document.adoptedStyleSheets.push(sheet);
+
+applyTheme(window.args.theme ?? DEFAULT_THEME);
+window.api.onAppPrefsUpdate((p) => { if (p.theme != null) applyTheme(p.theme); });
 
 function SketchCard(filePath, name, enabled, previewDir, previewPath) {
   const card = document.createElement('div');

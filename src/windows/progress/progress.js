@@ -1,5 +1,9 @@
 import Button from '../../components/ui/button.js';
 import { Field } from '../../components/ui/inputs.js';
+import { applyTheme, DEFAULT_THEME } from '../../components/theme.js';
+
+applyTheme(window.args.theme ?? DEFAULT_THEME);
+window.api.onAppPrefsUpdate((p) => { if (p.theme != null) applyTheme(p.theme); });
 
 const barFill = document.querySelector('#bar-fill');
 barFill.classList.add('loading');

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('args', {
   sketchPath: params.get('sketchPath'),
   audioPath: params.get('audioPath'),
   output: params.get('output'),
+  theme: params.get('theme'),
 });
 
 contextBridge.exposeInMainWorld('api', {
@@ -14,4 +15,6 @@ contextBridge.exposeInMainWorld('api', {
   quitApp: () => ipcRenderer.send('quit-app'),
   openOutputFolder: () => ipcRenderer.send('open-output-folder'),
   onProgress: (cb) => ipcRenderer.on('progress', (_e, data) => cb(data)),
+  onAppPrefsUpdate: (cb) =>
+    ipcRenderer.on('app-prefs-update', (_e, p) => cb(p)),
 });

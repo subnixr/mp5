@@ -47,41 +47,41 @@ The controls bar appears at the bottom of the window. It auto-hides after 3 seco
 
 ### Interactions
 
-| Widget                   | Action                                           | Interaction                |
-| ------------------------ | ------------------------------------------------ | -------------------------- |
-| **MIC / FILE switch**    | Start mic input                                  | Click MIC                  |
-|                          | Open audio file picker                           | Click FILE                 |
-| **Play / Pause**         | Toggle playback                                  | Click                      |
-| **Loop**                 | Toggle loop                                      | Click                      |
-| **Seek / frequency bar** | Seek to position (file mode)                     | Click                      |
-|                          | Toggle waveform / spectrum view (file mode only) | Right-click                |
-| **Volume slider**        | Set volume                                       | Drag                       |
-|                          | Adjust volume (shows volume OSD)                 | Scroll wheel               |
-|                          | Toggle mute / unmute (shows volume OSD)          | Right-click                |
-| **Params**               | Open settings window                             | Click                      |
-| **Gallery**              | Open gallery window                              | Click                      |
-| **Sketch picker**        | Open sketch file picker                          | Click                      |
-|                          | Open current sketch in system editor             | Right-click                |
-|                          | Open gallery directory in file manager           | Right-click (gallery mode) |
-| **Fullscreen**           | Toggle fullscreen                                | Click                      |
+| Widget                   | Action                                                                   | Interaction                |
+| ------------------------ | ------------------------------------------------------------------------ | -------------------------- |
+| **MIC / FILE switch**    | Start mic input                                                          | Click MIC                  |
+|                          | Open audio file picker                                                   | Click FILE                 |
+| **Play / Pause**         | Toggle playback                                                          | Click                      |
+| **Loop**                 | Toggle loop                                                              | Click                      |
+| **Seek / frequency bar** | Seek to position (file mode)                                             | Click                      |
+|                          | Toggle waveform / spectrum view (file mode only)                         | Right-click                |
+| **Volume slider**        | Set volume                                                               | Drag                       |
+|                          | Adjust volume (shows volume OSD)                                         | Scroll wheel               |
+|                          | Toggle mute / unmute (shows volume OSD)                                  | Right-click                |
+| **Params**               | Open settings window; focus it if already open; close it if focused      | Click                      |
+| **Gallery**              | Open gallery window; focus it if already open; close it if focused       | Click                      |
+| **Sketch picker**        | Open sketch file picker                                                  | Click                      |
+|                          | Open current sketch in system editor                                     | Right-click                |
+|                          | Open gallery directory in file manager                                   | Right-click (gallery mode) |
+| **Fullscreen**           | Toggle fullscreen                                                        | Click                      |
 
 ### Keyboard shortcuts
 
-| Key                         | Action                                             |
-| --------------------------- | -------------------------------------------------- |
-| `Space`                     | Play/pause (file/no-audio) or toggle mic listening |
-| `Return`                    | Toggle fullscreen                                  |
-| `Left / Right`              | Seek −10 / +10 seconds                             |
-| `Shift+Left / Shift+Right`  | Seek −1 / +1 frame (file only)                     |
-| `Home / End`                | Seek to start / end (file only)                    |
-| `Up / Down`, `WheelScroll`  | Volume +/−                                         |
-| `M`                         | Toggle mute                                        |
-| `Ctrl+Space`, `Right-click` | Pin / unpin controls                               |
-| `Tab / Shift+Tab`           | Next / previous sketch (gallery mode)              |
-| `Ctrl+R`                    | Reload window                                      |
-| `F10`                       | Open gallery window                                |
-| `F11`                       | Toggle fullscreen                                  |
-| `F12`                       | Open settings window                               |
+| Key                         | Action                                                                    |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `Space`                     | Play/pause (file/no-audio) or toggle mic listening                        |
+| `Return`                    | Toggle fullscreen                                                         |
+| `Left / Right`              | Seek −10 / +10 seconds                                                    |
+| `Shift+Left / Shift+Right`  | Seek −1 / +1 frame (file only)                                            |
+| `Home / End`                | Seek to start / end (file only)                                           |
+| `Up / Down`, `WheelScroll`  | Volume +/−                                                                |
+| `M`                         | Toggle mute                                                               |
+| `Ctrl+Space`, `Right-click` | Pin / unpin controls                                                      |
+| `Tab / Shift+Tab`           | Next / previous sketch (gallery mode)                                     |
+| `Ctrl+R`                    | Reload window                                                             |
+| `F10`                       | Open gallery window; focus it if already open; close it if focused        |
+| `F11`                       | Toggle fullscreen                                                         |
+| `F12`                       | Open settings window; focus it if already open; close it if focused       |
 
 ### On-screen display (OSD)
 
@@ -268,9 +268,9 @@ The **gui** group at the top of the settings window's right pane edits the activ
 
 | Control               | Effect                                                                       |
 | --------------------- | ---------------------------------------------------------------------------- |
-| **Light theme**       | Toggles the settings-window theme (applied immediately).                     |
+| **Config file**       | Pick a different config file; its values load and it becomes the save target. Shown inline with the save button. |
+| **Save config** (icon) | Writes the current GUI prefs and render defaults back to the loaded config file. |
+| **Light theme**       | Toggles the settings-window theme (applied immediately to all open windows). |
 | **Visualizer background** | Color of the app background around the canvas (applied to the visualizer live). |
-| **Config file**       | Pick a different config file; its values load and it becomes the save target. |
-| **Save config**       | Writes the current GUI prefs and render defaults back to the loaded config file. |
 
 Theme and background edits apply immediately but are session-only until **Save config** persists them. The saved `rendering` block excludes the track-specific skip/length window — only geometry, fps, and codec are stored as defaults.

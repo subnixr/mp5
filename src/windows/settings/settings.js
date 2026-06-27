@@ -120,8 +120,8 @@ document
     const output = await window.api.browseOutput(defaultName);
     if (!output) return;
 
-    const startTime = rv.skip ? (parseTimecode(rv.skip) ?? 0) : 0;
-    const length = rv.length ? parseTimecode(rv.length) : null;
+    const startTime = rv.skip ?? 0;
+    const length = rv.length ?? null;
 
     await window.api.triggerRender({
       params: panel.getValues(),
@@ -173,6 +173,7 @@ function GuiPanel(elem) {
       key: 'configFile',
       type: 'file',
       label: 'Config file',
+      noClear: true,
       value: window.api.definitions.configPath,
     },
     async (_key, filePath) => {
@@ -195,7 +196,6 @@ function GuiPanel(elem) {
 
   const saveBtn = Button({
     icon: 'save',
-    label: 'Save config',
     onClick: async () => {
       // skip/length are track-specific, not defaults; persist geometry/fps/codec
       const rendering = renderPanel.getValues();
@@ -216,10 +216,15 @@ function GuiPanel(elem) {
   });
   saveBtn.classList.add('config-save');
 
+  const configRow = document.createElement('div');
+  configRow.className = 'config-row';
+  configRow.appendChild(fileField);
+  configRow.appendChild(saveBtn);
+
   const group = Input.Group({
     title: 'gui',
     open: false,
-    children: [themeField, bgField, fileField, saveBtn],
+    children: [configRow, themeField, bgField],
   });
   elem.appendChild(group);
 

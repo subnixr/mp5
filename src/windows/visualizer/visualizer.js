@@ -484,6 +484,8 @@ async function main() {
   // returning from a render reopens settings so the user lands back where they were
   if (window.args.openSettings) openSettings();
 
+  window.api.onTriggerOpenSettings(() => openSettings());
+
   window.addEventListener('keydown', (e) => {
     if (e.code === 'F12') {
       openSettings();

@@ -65,4 +65,6 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('gallery-settings-update', cb),
   onPushGalleryStateRequest: (cb) =>
     ipcRenderer.on('push-gallery-state-request', cb),
+  onTriggerOpenSettings: (cb) =>
+    ipcRenderer.on('trigger-open-settings', (_e) => cb()),
 });

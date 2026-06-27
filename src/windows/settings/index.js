@@ -70,12 +70,6 @@ export function openSettingsWindow(
     if (!visWin.isDestroyed()) visWin.webContents.send('rendering-update', r);
   };
 
-  // app-level GUI prefs (theme/bg) are session-only; just relay them to the
-  // visualizer so it can apply them live
-  const onAppPrefs = (_e, p) => {
-    if (!visWin.isDestroyed()) visWin.webContents.send('app-prefs-update', p);
-  };
-
   const onRequestFile = async (_e, key) => {
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
@@ -160,7 +154,6 @@ export function openSettingsWindow(
   ipcMain.on('settings-defs-push', onDefsPush);
   ipcMain.on('settings-update', onParamsUpdate);
   ipcMain.on('settings-rendering-changed', onRenderingChanged);
-  ipcMain.on('app-prefs-changed', onAppPrefs);
   ipcMain.handle('settings-request-file', onRequestFile);
   ipcMain.handle('settings-save', onSave);
   ipcMain.handle('settings-load', onLoad);
@@ -173,7 +166,6 @@ export function openSettingsWindow(
     ipcMain.off('settings-defs-push', onDefsPush);
     ipcMain.off('settings-update', onParamsUpdate);
     ipcMain.off('settings-rendering-changed', onRenderingChanged);
-    ipcMain.off('app-prefs-changed', onAppPrefs);
     ipcMain.removeHandler('settings-request-file');
     ipcMain.removeHandler('settings-save');
     ipcMain.removeHandler('settings-load');

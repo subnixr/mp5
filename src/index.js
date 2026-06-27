@@ -1,4 +1,4 @@
-import { app, session } from 'electron';
+import { app, session, ipcMain, BrowserWindow } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -49,6 +49,13 @@ app.whenReady().then(async () => {
     }
     args.configPath = configPath;
     args.appPrefs = config.gui;
+
+    ipcMain.on('app-prefs-changed', (_e, p) => {
+      Object.assign(args.appPrefs, p);
+      BrowserWindow.getAllWindows().forEach((w) => {
+        if (!w.isDestroyed()) w.webContents.send('app-prefs-update', p);
+      });
+    });
 
     if (args.sketchPath?.endsWith('.zip')) {
       const zipName = path.basename(args.sketchPath, '.zip');

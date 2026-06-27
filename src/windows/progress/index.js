@@ -10,6 +10,7 @@ export function openRenderProgressWindow({
   sketchPath,
   audioPath,
   output,
+  theme,
   onCancel,
   onReturnToAnimation,
 }) {
@@ -76,6 +77,7 @@ export function openRenderProgressWindow({
   if (sketchPath) query.sketchPath = sketchPath;
   if (audioPath) query.audioPath = audioPath;
   if (output) query.output = output;
+  if (theme) query.theme = theme;
 
   win.loadFile(path.join(__dirname, 'progress.html'), { query });
 

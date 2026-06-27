@@ -176,16 +176,19 @@ export function runVisualizer(args) {
     childWin.webContents.on('before-input-event', (_event, input) => {
       if (input.type !== 'keyDown') return;
       if (input.code === 'F10' && args.galleryDir) onOpenGallery();
-      if (input.code === 'F12') openSettings(null);
+      if (input.code === 'F12') {
+        if (!win.isDestroyed()) win.webContents.send('trigger-open-settings');
+      }
     });
   };
 
   const onOpenGallery = () => {
     if (galleryWin && !galleryWin.isDestroyed()) {
-      galleryWin.close();
+      if (galleryWin.isFocused()) galleryWin.close();
+      else galleryWin.focus();
       return;
     }
-    galleryWin = openGalleryWindow(win);
+    galleryWin = openGalleryWindow(win, args.appPrefs?.theme);
     galleryWin.webContents.once('did-finish-load', () => {
       if (!win.isDestroyed())
         win.webContents.send('push-gallery-state-request');
@@ -204,7 +207,8 @@ export function runVisualizer(args) {
     if (!effectiveDefs) return;
 
     if (settingsWin && !settingsWin.isDestroyed()) {
-      settingsWin.close();
+      if (settingsWin.isFocused()) settingsWin.close();
+      else settingsWin.focus();
       return;
     }
     const audioBase = args.audioPath
@@ -537,6 +541,7 @@ export function runVisualizer(args) {
       sketchPath: args.sketchPath,
       audioPath: args.audioPath,
       output,
+      theme: args.appPrefs?.theme,
       onCancel: () => {
         renderRef.cancel?.();
         runVisualizer({ ...args, initialParams: params });

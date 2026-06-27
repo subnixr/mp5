@@ -61,9 +61,8 @@ body {
 .settings-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   background: var(--color-bg);
-  padding: 0.4em 1rem 1rem;
+  padding: 0.6rem 1rem 1rem;
   box-sizing: border-box;
   flex: 1;
   overflow-y: auto;
@@ -93,7 +92,7 @@ body {
   background: var(--color-bg);
   /* bottom padding matches .settings-container's inter-group gap (1rem) so the
      RENDERING group below lines up with the second param group */
-  padding: 0.4em 1rem 1rem;
+  padding: 0.6rem 1rem 1rem;
   box-sizing: border-box;
   flex: none;
 }
@@ -140,12 +139,18 @@ body {
   min-width: 0;
 }
 
-/* config save button (gui group): full-width, sized like the other in-panel
-   buttons (e.g. .repeater-add). higher specificity than .btn because ui.css is
-   loaded via adoptedStyleSheets, which wins ties against this linked sheet */
+/* config row: file chooser + save button side by side */
+.group-fields .config-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.8rem;
+  align-items: end;
+}
+
+/* higher specificity than .btn because ui.css loads via adoptedStyleSheets */
 .group-fields .config-save {
   flex: none;
-  width: 100%;
+  width: 3rem;
   height: 3rem;
 }
 
@@ -191,27 +196,29 @@ body {
 
 .settings-container > .group:first-child,
 .gui-container > .group:first-child {
-  margin-top: 0.6em;
+  margin-top: 0;
 }
 
 .group {
-  position: relative;
-  border-top: 1px solid var(--color-border);
-  border-left: 1px solid var(--color-border);
-  margin-top: 1em;
-  padding: 0.6rem 0 0 1rem;
+  margin-top: 0.6rem;
   outline: none;
-}
-
-.group:not([open]) {
-  border-left-color: transparent;
 }
 
 .group-fields {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 0.8rem 0 0;
+  padding: 0.8rem 0 0 1rem;
+  position: relative;
+}
+
+.group[open] .group-fields::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--color-border);
 }
 
 .group-fields .group {
