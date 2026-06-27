@@ -368,7 +368,7 @@ export function createParams() {
     return makeParamObj(keyRef);
   }
 
-  params.repeater = function (key, defaults, field, opts = {}) {
+  params.repeater = function (key, defaults, opts = {}, field) {
     if (field._key !== key) rekeyChild(field, key);
 
     const fieldKey = field._key;
@@ -485,10 +485,10 @@ export function createParams() {
   params.combo = function (key, label, ...paramObjs) {
     let opts = {};
     if (paramObjs.length > 0) {
-      const last = paramObjs[paramObjs.length - 1];
-      if (last !== null && typeof last === 'object' && !last._key && !last._isCombo && !last._isGrid) {
-        opts = last;
-        paramObjs = paramObjs.slice(0, -1);
+      const first = paramObjs[0];
+      if (first !== null && typeof first === 'object' && !first._key && !first._isCombo && !first._isGrid) {
+        opts = first;
+        paramObjs = paramObjs.slice(1);
       }
     }
     for (const p of paramObjs) rekeyChild(p, key);
@@ -507,10 +507,10 @@ export function createParams() {
   params.grid = function (key, columns, ...paramObjs) {
     let opts = {};
     if (paramObjs.length > 0) {
-      const last = paramObjs[paramObjs.length - 1];
-      if (last !== null && typeof last === 'object' && !last._key && !last._isCombo && !last._isGrid) {
-        opts = last;
-        paramObjs = paramObjs.slice(0, -1);
+      const first = paramObjs[0];
+      if (first !== null && typeof first === 'object' && !first._key && !first._isCombo && !first._isGrid) {
+        opts = first;
+        paramObjs = paramObjs.slice(1);
       }
     }
     for (const p of paramObjs) rekeyChild(p, key);

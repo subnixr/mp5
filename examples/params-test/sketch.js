@@ -125,16 +125,15 @@ export default function sketch(p, audio, params) {
   const origin = params.combo(
     'origin',
     'Origin (combo)',
+    { tip: 'combo: groups params into a single horizontal row.\nDefault flex: auto for all but last, 1 for last.' },
     params('ox', 260, { type: 'number', label: 'X', min: 0, max: 520 }),
     params('oy', 320, { type: 'number', label: 'Y', min: 0, max: 640 }),
-    {
-      tip: 'combo: groups params into a single horizontal row.\nDefault flex: auto for all but last, 1 for last.',
-    },
   );
 
   const tagged = params.combo(
     'tagged',
     'Tagged (combo + flex)',
+    { tip: 'Explicit flex values: flex:2 makes Tag twice as wide as Val, flex:"auto" shrinks to content.' },
     params('tg_label', 'main', { type: 'text', label: 'Tag', flex: 2 }),
     params('tg_val', 50, {
       type: 'number',
@@ -144,32 +143,27 @@ export default function sketch(p, audio, params) {
       max: 100,
     }),
     params('tg_on', true, { type: 'checkbox', label: 'On', flex: 'auto' }),
-    {
-      tip: 'Explicit flex values: flex:2 makes Tag twice as wide as Val, flex:"auto" shrinks to content.',
-    },
   );
 
   // grid: fixed column layout, span stretches across columns
   const cross = params.grid(
     'cross',
     2,
+    { tip: 'grid: arranges params in a fixed column layout (columns: 2 here).' },
     params('cx', 260, { type: 'number', label: 'X', min: 0, max: 520 }),
     params('cy', 500, { type: 'number', label: 'Y', min: 0, max: 640 }),
     params('carm', 60, { type: 'number', label: 'Arm', min: 5, max: 200 }),
     params('cthk', 8, { type: 'number', label: 'Thick', min: 1, max: 60 }),
-    {
-      tip: 'grid: arranges params in a fixed column layout (columns: 2 here).',
-    },
   );
 
   const palette = params.grid(
     'palette',
     3,
+    { tip: 'span: a grid item can span multiple columns — pNote spans all 3.' },
     params('pR', 255, { type: 'number', label: 'R', min: 0, max: 255 }),
     params('pG', 80, { type: 'number', label: 'G', min: 0, max: 255 }),
     params('pB', 40, { type: 'number', label: 'B', min: 0, max: 255 }),
     params('pNote', 'warm orange', { type: 'text', label: 'Note', span: 3 }),
-    { tip: 'span: a grid item can span multiple columns — pNote spans all 3.' },
   );
 
   params.group(
@@ -185,6 +179,7 @@ export default function sketch(p, audio, params) {
   const sizes = params.repeater(
     'sizes',
     [30, 60, 90],
+    { min: 1, max: 6 },
     params('sz', 40, {
       type: 'number',
       label: 'Size',
@@ -192,7 +187,6 @@ export default function sketch(p, audio, params) {
       max: 200,
       tip: 'Plain repeater: each row is a single field.\nmin:1 prevents removing the last row, max:6 caps additions.',
     }),
-    { min: 1, max: 6 },
   );
 
   // combo repeater: each row is a combo
@@ -202,9 +196,11 @@ export default function sketch(p, audio, params) {
       { dx: 120, dy: 260, dr: 22 },
       { dx: 340, dy: 310, dr: 36 },
     ],
+    { min: 1 },
     params.combo(
       'dot',
       'Dot',
+      { tip: 'Combo repeater: each row is a horizontal combo. Drag handles to reorder rows.' },
       params('dx', 0, { type: 'number', label: 'X', flex: 1 }),
       params('dy', 0, { type: 'number', label: 'Y', flex: 1 }),
       params('dr', 15, {
@@ -213,11 +209,7 @@ export default function sketch(p, audio, params) {
         flex: 'auto',
         unit: 'px',
       }),
-      {
-        tip: 'Combo repeater: each row is a horizontal combo. Drag handles to reorder rows.',
-      },
     ),
-    { min: 1 },
   );
 
   // grid repeater: each row is a grid
@@ -227,16 +219,16 @@ export default function sketch(p, audio, params) {
       { rx: 60, ry: 80, rw: 100, rh: 50 },
       { rx: 300, ry: 180, rw: 80, rh: 80 },
     ],
+    { min: 1, max: 4, label: 'Rects' },
     params.grid(
       'rect',
       2,
+      { tip: 'Grid repeater: each row is a 2-column grid. min:1, max:4.' },
       params('rx', 60, { type: 'number', label: 'X', min: 0, max: 520 }),
       params('ry', 80, { type: 'number', label: 'Y', min: 0, max: 640 }),
       params('rw', 80, { type: 'number', label: 'W', min: 10, max: 400 }),
       params('rh', 40, { type: 'number', label: 'H', min: 10, max: 400 }),
-      { tip: 'Grid repeater: each row is a 2-column grid. min:1, max:4.' },
     ),
-    { min: 1, max: 4, label: 'Rects' },
   );
 
   params.group(
