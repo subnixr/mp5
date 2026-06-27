@@ -1,9 +1,7 @@
-<table border="0">
-<tr>
-<td><img src="build/icons/512x512.png" width="110" alt="MP5"></td>
-<td><h3>Run p5.js sketches driven by audio — both live on screen and rendered to video.</h3></td>
-</tr>
-</table>
+<div style="display: flex; gap: 2rem; align-items: center; margin-bottom: 2rem">
+    <img src="build/icons/512x512.png" width="128">
+    <h3 style="flex: 0 1 75%">Run p5.js sketches driven by audio — both live on screen and rendered to video.</h3>
+</div>
 
 MP5 is an Electron app that plays time- and audio-driven [p5.js](https://p5js.org) sketches. Point it at a sketch and:
 
