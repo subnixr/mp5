@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { BrowserWindow, ipcMain, dialog, shell, app } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -79,6 +79,7 @@ export function openSettingsWindow(defs, visWin) {
     if (canceled || !filePath) return false;
     lastPresetDir = path.dirname(filePath);
     const payload = {
+      version: app.getVersion(),
       params: toNested(values.params),
       rendering: values.rendering,
     };
