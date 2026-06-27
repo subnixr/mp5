@@ -132,7 +132,11 @@ export function Label(
 ) {
   if (group) {
     elem.classList.add('group-title');
-    if (label != null) elem.textContent = label;
+    if (label != null) {
+      const textSpan = document.createElement('span');
+      textSpan.textContent = label;
+      elem.appendChild(textSpan);
+    }
     return elem;
   }
 
@@ -302,6 +306,13 @@ export function Text(field) {
   return container;
 }
 
+function makeSliderHandle() {
+  const h = document.createElement('input');
+  h.type = 'range';
+  h.className = 'slider-handle';
+  return h;
+}
+
 export function Color(field) {
   const hasAlpha = field.transparency === true;
   const container = document.createElement('div');
@@ -332,8 +343,7 @@ export function Color(field) {
 
   let alpha = null;
   if (hasAlpha) {
-    alpha = document.createElement('input');
-    alpha.type = 'range';
+    alpha = makeSliderHandle();
     alpha.min = 0;
     alpha.max = 255;
     alpha.value = initAlpha;
@@ -775,10 +785,16 @@ export function Combo(def, onSubChange) {
     const itemValue =
       itemDef.key in rowValue ? rowValue[itemDef.key] : itemDef.value;
     const ctrl = createControl({ ...itemDef, value: itemValue });
-    if (itemDef.flex != null)
-      ctrl.style.flex =
-        itemDef.flex === 'auto' ? '0 1 auto' : String(itemDef.flex);
-    ctrl.style.minWidth = '0';
+    const isFlexAuto = itemDef.flex === 'auto';
+    ctrl.style.flex =
+      itemDef.flex == null ? (itemDef.type === 'checkbox' ? '0 0 auto' : '1') :
+      isFlexAuto ? (
+        itemDef.type === 'checkbox' ? '0 0 auto' :
+        ctrl.classList.contains('has-unit') ? '0 1 8rem' :
+        '0 1 6rem'
+      ) :
+      String(itemDef.flex);
+    if (isFlexAuto) ctrl.dataset.flexAuto = '';
     values[itemDef.key] = ctrl.getValue();
 
     ctrl.addEventListener('change', (evt) => {
@@ -995,7 +1011,7 @@ export function Group(def, register = null, depth = 0) {
     const tipWrapper = document.createElement('div');
     tipWrapper.className = 'group-tip';
     tipWrapper.appendChild(makeTipIcon(def.tip));
-    details.appendChild(tipWrapper);
+    summary.appendChild(tipWrapper);
   }
 
   const fieldsDiv = document.createElement('div');
@@ -1083,7 +1099,10 @@ export function TimeRange(field) {
   let lengthMode = field.length === true;
   const showToggle = field.toggle !== false;
   const minVal = field.min ?? 0;
-  const fmt = field.seconds ? fmtSecs : fmtTimecode;
+  let useSecondsFrom = field.seconds ?? false;
+  let useSecondsTo = field.seconds ?? false;
+  let fmtFrom = useSecondsFrom ? fmtSecs : fmtTimecode;
+  let fmtTo = useSecondsTo ? fmtSecs : fmtTimecode;
 
   const container = document.createElement('div');
   container.className = 'time-range';
@@ -1100,22 +1119,26 @@ export function TimeRange(field) {
     inp.type = 'text';
     inp.placeholder = placeholder;
     inp.spellcheck = false;
+    inp.addEventListener('beforeinput', (e) => {
+      const text = e.data ?? e.dataTransfer?.getData('text') ?? '';
+      if (text && !/^[0-9:\-.]+$/.test(text)) e.preventDefault();
+    });
     inp.addEventListener('change', (e) => e.stopPropagation());
     // the unit box doubles as the field label (from/to/skip/length)
     const unit = document.createElement('div');
     unit.className = 'unit-box';
-    unit.tabIndex = -1;
-    unit.style.cursor = 'default';
+    unit.tabIndex = 0;
     ctrl.appendChild(inp);
     ctrl.appendChild(unit);
     wrap.appendChild(ctrl);
     return { wrap, inp, unit };
   }
 
-  const negPlaceholder = field.seconds ? '[-]seconds' : '[-][[HH:]MM:]SS';
-  const posPlaceholder = field.seconds ? 'seconds' : '[[HH:]MM:]SS';
-  const { wrap: fromWrap, inp: fromInp, unit: fromUnit } = makeField(negPlaceholder);
-  const { wrap: toWrap, inp: toInp, unit: toUnit } = makeField(negPlaceholder);
+  function negPhFrom() { return useSecondsFrom ? '[-]seconds' : '[-][[HH:]MM:]SS'; }
+  function negPhTo() { return useSecondsTo ? '[-]seconds' : '[-][[HH:]MM:]SS'; }
+  function posPhTo() { return useSecondsTo ? 'seconds' : '[[HH:]MM:]SS'; }
+  const { wrap: fromWrap, inp: fromInp, unit: fromUnit } = makeField(negPhFrom());
+  const { wrap: toWrap, inp: toInp, unit: toUnit } = makeField(negPhTo());
   inputsRow.appendChild(fromWrap);
   inputsRow.appendChild(toWrap);
 
@@ -1151,9 +1174,7 @@ export function TimeRange(field) {
   trackWrapper.className = 'tr-track-wrapper';
 
   function makeThumb() {
-    const t = document.createElement('input');
-    t.type = 'range';
-    t.className = 'tr-thumb';
+    const t = makeSliderHandle();
     t.min = minVal;
     t.step = 'any';
     t.value = minVal;
@@ -1194,7 +1215,8 @@ export function TimeRange(field) {
   function applyModeUI() {
     fromUnit.textContent = lengthMode ? 'skip' : 'from';
     toUnit.textContent = lengthMode ? 'length' : 'to';
-    toInp.placeholder = lengthMode ? posPlaceholder : negPlaceholder;
+    fromInp.placeholder = negPhFrom();
+    toInp.placeholder = lengthMode ? posPhTo() : negPhTo();
     toSignBtn.style.display = lengthMode ? 'none' : '';
   }
 
@@ -1229,9 +1251,9 @@ export function TimeRange(field) {
   function renderField2(startPos, endPos, max) {
     if (lengthMode) {
       const len = endPos - startPos;
-      toInp.value = len > 0 ? fmt(len) : '';
+      toInp.value = len > 0 ? fmtTo(len) : '';
     } else {
-      toInp.value = fmt(signedFromHandle(endPos, signTo, max));
+      toInp.value = fmtTo(signedFromHandle(endPos, signTo, max));
     }
   }
 
@@ -1277,7 +1299,7 @@ export function TimeRange(field) {
     const startPos = parseFloat(startThumb.value);
     let endPos = parseFloat(endThumb.value);
     if (startPos > endPos) { endPos = startPos; endThumb.value = endPos; }
-    fromInp.value = fmt(signedFromHandle(startPos, signFrom, max));
+    fromInp.value = fmtFrom(signedFromHandle(startPos, signFrom, max));
     renderField2(startPos, endPos, max);
     updateGradient();
     emitChange();
@@ -1329,19 +1351,19 @@ export function TimeRange(field) {
 
   fromInp.addEventListener('blur', () => {
     const v = parseFrom();
-    if (v != null) fromInp.value = fmt(v);
+    if (v != null) fromInp.value = fmtFrom(v);
   });
 
   toInp.addEventListener('blur', () => {
     const v = parseTo();
-    if (v != null) toInp.value = fmt(v);
+    if (v != null) toInp.value = fmtTo(v);
   });
 
   fromSignBtn.addEventListener('click', () => {
     const max = getMax();
     signFrom = signFrom === '+' ? '-' : '+';
     fromSignBtn.textContent = signFrom;
-    fromInp.value = fmt(signedFromHandle(parseFloat(startThumb.value), signFrom, max));
+    fromInp.value = fmtFrom(signedFromHandle(parseFloat(startThumb.value), signFrom, max));
     emitChange();
   });
 
@@ -1349,7 +1371,7 @@ export function TimeRange(field) {
     const max = getMax();
     signTo = signTo === '+' ? '-' : '+';
     toSignBtn.textContent = signTo;
-    toInp.value = fmt(signedFromHandle(parseFloat(endThumb.value), signTo, max));
+    toInp.value = fmtTo(signedFromHandle(parseFloat(endThumb.value), signTo, max));
     emitChange();
   });
 
@@ -1362,6 +1384,29 @@ export function TimeRange(field) {
   }
 
   if (toggleBtn) toggleBtn.addEventListener('click', toggleMode);
+
+  function bindFormatToggle(unit, toggle) {
+    unit.addEventListener('click', toggle);
+    unit.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  }
+
+  bindFormatToggle(fromUnit, () => {
+    const v = parseFrom();
+    useSecondsFrom = !useSecondsFrom;
+    fmtFrom = useSecondsFrom ? fmtSecs : fmtTimecode;
+    applyModeUI();
+    if (v != null) fromInp.value = fmtFrom(v);
+  });
+
+  bindFormatToggle(toUnit, () => {
+    const v = parseTo();
+    useSecondsTo = !useSecondsTo;
+    fmtTo = useSecondsTo ? fmtSecs : fmtTimecode;
+    applyModeUI();
+    if (v != null) toInp.value = fmtTo(v);
+  });
 
   function openPopup() {
     if (field.seek === false) return;
@@ -1398,13 +1443,13 @@ export function TimeRange(field) {
   container.setValue = ({ from, to } = {}) => {
     signFrom = from != null && from < 0 ? '-' : '+';
     fromSignBtn.textContent = signFrom;
-    fromInp.value = from != null ? fmt(from) : '';
+    fromInp.value = from != null ? fmtFrom(from) : '';
     if (lengthMode) {
-      toInp.value = from != null && to != null ? fmt(to - from) : '';
+      toInp.value = from != null && to != null ? fmtTo(to - from) : '';
     } else {
       signTo = to != null && to < 0 ? '-' : '+';
       toSignBtn.textContent = signTo;
-      toInp.value = to != null ? fmt(to) : '';
+      toInp.value = to != null ? fmtTo(to) : '';
     }
     syncHandles();
     emitChange();
@@ -1417,7 +1462,8 @@ export function TimeRange(field) {
 }
 
 export function Time(field) {
-  const fmt = field.seconds ? fmtSecs : fmtTimecode;
+  let useSeconds = field.seconds ?? false;
+  let fmt = useSeconds ? fmtSecs : fmtTimecode;
 
   const container = document.createElement('div');
   container.className = 'control has-unit';
@@ -1425,17 +1471,24 @@ export function Time(field) {
   const input = document.createElement('input');
   input.type = 'text';
   input.value = field.value ?? '';
-  input.placeholder = field.seconds ? '[-]seconds' : '[-][[HH:]MM:]SS[.mmm]';
   input.spellcheck = false;
+  input.addEventListener('beforeinput', (e) => {
+    const text = e.data ?? e.dataTransfer?.getData('text') ?? '';
+    if (text && !/^[0-9:\-.]+$/.test(text)) e.preventDefault();
+  });
   input.addEventListener('change', (evt) => {
     evt.stopPropagation();
   });
 
   const unitBox = document.createElement('div');
   unitBox.className = 'unit-box';
-  unitBox.textContent = 'time';
   unitBox.tabIndex = -1;
-  unitBox.style.cursor = 'default';
+
+  function applyFormatUI() {
+    unitBox.textContent = useSeconds ? 'secs' : 'time';
+    input.placeholder = useSeconds ? '[-]seconds' : '[-][[HH:]MM:]SS[.mmm]';
+  }
+  applyFormatUI();
 
   const popup = document.createElement('div');
   popup.className = 'time-popup';
@@ -1449,16 +1502,18 @@ export function Time(field) {
   signBtn.type = 'button';
   signBtn.textContent = '+';
 
-  const slider = document.createElement('input');
-  slider.type = 'range';
-  slider.className = 'time-slider';
+  const slider = makeSliderHandle();
   slider.min = 0;
   slider.step = 'any';
   slider.value = 0;
   slider.max = 0;
 
+  const sliderWrapper = document.createElement('div');
+  sliderWrapper.className = 'time-slider-wrapper';
+  sliderWrapper.appendChild(slider);
+
   popupRow.appendChild(signBtn);
-  popupRow.appendChild(slider);
+  popupRow.appendChild(sliderWrapper);
   popup.appendChild(popupRow);
 
   let sign = '+';
@@ -1478,7 +1533,7 @@ export function Time(field) {
     const pct = max > 0 ? (parseFloat(slider.value) / max) * 100 : 0;
     const a = sign === '+' ? 0 : pct;
     const b = sign === '+' ? pct : 100;
-    slider.style.setProperty('--track-bg', `linear-gradient(to right, var(--color-field) ${a}%, var(--color-fg) ${a}%, var(--color-fg) ${b}%, var(--color-field) ${b}%)`);
+    sliderWrapper.style.setProperty('--track-bg', `linear-gradient(to right, var(--color-field) ${a}%, var(--color-fg) ${a}%, var(--color-fg) ${b}%, var(--color-field) ${b}%)`);
   }
 
   function syncSliderFromInput() {
@@ -1486,12 +1541,20 @@ export function Time(field) {
     if (parsed == null) return;
     sign = parsed < 0 ? '-' : '+';
     signBtn.textContent = sign;
+    slider.max = field.getDuration ? (field.getDuration() || 0) : (field.max ?? 3600);
     const dur = parseFloat(slider.max) || 0;
-    // convert raw value to track position
     const trackPos = parsed < 0 ? dur + parsed : parsed;
     slider.value = Math.max(0, Math.min(trackPos, dur));
     updateGradient();
   }
+
+  unitBox.addEventListener('click', () => {
+    const parsed = parseTimecodeStr(input.value);
+    useSeconds = !useSeconds;
+    fmt = useSeconds ? fmtSecs : fmtTimecode;
+    applyFormatUI();
+    if (parsed != null) input.value = fmt(parsed);
+  });
 
   function applyPopupChange(formatted) {
     input.value = formatted;
@@ -1514,7 +1577,7 @@ export function Time(field) {
   });
 
   input.addEventListener('input', () => {
-    if (!suppressSync && !popup.hidden) syncSliderFromInput();
+    if (!suppressSync) syncSliderFromInput();
     if (!suppressSync) {
       const parsed = parseTimecodeStr(input.value);
       if (parsed != null) emit(container, parsed);

@@ -200,10 +200,12 @@ params('offset', -10, {
 });
 ```
 
+The `seconds` option sets the **initial** display format. Clicking the unit label (`time` / `secs`) at runtime toggles between timecode and decimal seconds without affecting the stored value.
+
 | Opt | Description |
 | --- | ----------- |
 | `max` | Slider upper bound when no audio duration is loaded (default: `3600`) |
-| `seconds` | `true` = decimal seconds `[-]s`; `false` (default) = timecode `[-][[HH:]MM:]SS[.mmm]` |
+| `seconds` | `true` = start in decimal seconds display; `false` (default) = start in timecode display |
 | `seek` | `false` to disable the scrub popup slider (default: popup opens on focus) |
 
 ### `'timerange'`
@@ -234,13 +236,15 @@ params('clip', { from: 5, to: 35 }, {
 
 The two handles always stay ordered (`from ≤ to`).
 
+The `seconds` option sets the **initial** format for both fields. Clicking a field's unit label (`from` / `to` / `skip` / `length`) at runtime toggles its format independently between timecode and decimal seconds.
+
 | Opt | Description |
 | --- | ----------- |
 | `length` | `true` = start in Skip/Length mode; `false` (default) = start in From/To mode |
 | `toggle` | `false` to hide the mode-toggle button and lock the mode (default: shown) |
 | `min` | Slider lower bound, normalized positive seconds (default: `0`) |
 | `max` | Slider upper bound, normalized positive seconds. Default: track length when a file is loaded, else the render length (mic) |
-| `seconds` | `true` = decimal seconds; `false` (default) = timecode |
+| `seconds` | `true` = start both fields in decimal seconds display; `false` (default) = start in timecode display |
 | `seek` | `false` to disable the scrub popup (default: popup opens on focus) |
 
 ## Tooltips (`tip`)
@@ -316,7 +320,7 @@ colorList[0].onChange(cb); // subscribe to changes on a specific item
 
 ## Combo
 
-Use `params.combo(key, label, ...paramObjs)` to display multiple params as a single horizontal row in the settings window. Each `paramObj` is a regular `params()` result. Sub-params accept a `flex` option that controls their width share inside the row (CSS flex value or `'auto'`). By default all sub-params get `flex: 'auto'` (shrink to content) except the last, which gets `flex: 1` (fills remaining space).
+Use `params.combo(key, label, ...paramObjs)` to display multiple params as a single horizontal row in the settings window. Each `paramObj` is a regular `params()` result. Sub-params accept a `flex` option that controls their width share inside the row (CSS flex value or `'auto'`). By default checkboxes get a fixed size and all other sub-params get `flex: 1` (fill remaining space). Passing `flex: 'auto'` instead shrinks the field to a sensible minimum width based on its type (8 rem for fields with a unit label, 6 rem otherwise).
 
 ```js
 const stopColor = params('stopColor', '#ffffff', {

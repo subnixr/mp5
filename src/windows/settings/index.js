@@ -17,7 +17,7 @@ function hasBinary(name) {
   );
 }
 
-export function openSettingsWindow(defs, visWin) {
+export function openSettingsWindow(defs, visWin, getAudioBase = null) {
   const win = new BrowserWindow({
     width: 840,
     minWidth: 360,
@@ -47,7 +47,8 @@ export function openSettingsWindow(defs, visWin) {
     if (d.sketchName) sketchName = d.sketchName;
     if (d.sketchDir) sketchDir = d.sketchDir;
     const toSend = geometryLocked ? { ...d, canvasHint: null } : d;
-    if (!win.isDestroyed()) win.webContents.send('settings-defs-push', toSend);
+    const withAudio = getAudioBase ? { ...toSend, audioBase: getAudioBase() } : toSend;
+    if (!win.isDestroyed()) win.webContents.send('settings-defs-push', withAudio);
   };
 
   const onParamsUpdate = (_e, obj) => {

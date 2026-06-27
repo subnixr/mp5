@@ -18,8 +18,7 @@
 }
 
 .btn:focus-visible {
-  outline: 1px solid var(--color-select);
-  outline-offset: -1px;
+  border-color: var(--color-select);
 }
 
 .btn:hover {
@@ -89,8 +88,8 @@
   position: absolute;
   top: -0.6em;
   left: 0.5em;
-  background: var(--color-bg);
-  padding: 0 0.4em;
+  right: 0;
+  padding: 0;
   color: var(--color-fg);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -99,6 +98,9 @@
   list-style: none;
   white-space: nowrap;
   outline: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .group-title::-webkit-details-marker {
@@ -107,7 +109,13 @@
 
 .group-title::before {
   content: '▼ ';
-  vertical-align: middle;
+  background: var(--color-bg);
+  padding-left: 0.4em;
+}
+
+.group-title > span {
+  background: var(--color-bg);
+  padding-right: 0.4em;
 }
 
 .group:not([open]) .group-title::before {
@@ -169,8 +177,7 @@
 
 .repeater-remove:focus-visible {
   background: var(--color-error);
-  outline: 1px solid var(--color-select);
-  outline-offset: -1px;
+  border-color: var(--color-select);
 }
 
 .repeater-handle {
@@ -213,10 +220,14 @@
 .combo .control {
   position: relative;
   display: flex;
-  min-width: 0;
+  min-width: 3rem;
 }
 
-.combo input,
+.combo .control.has-unit {
+  min-width: 8rem;
+}
+
+.combo input:not([type='checkbox']),
 .combo select,
 .combo textarea {
   width: 100%;
@@ -349,12 +360,13 @@
   align-self: center;
   display: flex;
   align-items: center;
-  height: 2rem;
+  height: 3rem;
 }
 
-.input input[type='checkbox'] {
-  width: 2rem;
-  height: 2rem;
+.input input[type='checkbox'],
+.combo input[type='checkbox'] {
+  width: 3rem;
+  height: 3rem;
   padding: 0;
   cursor: pointer;
   flex-shrink: 0;
@@ -365,15 +377,16 @@
   position: relative;
 }
 
-.input input[type='checkbox']:focus-visible {
-  outline: 2px solid var(--color-select);
-  outline-offset: 2px;
+.input input[type='checkbox']:focus-visible,
+.combo input[type='checkbox']:focus-visible {
+  border-color: var(--color-select);
 }
 
-.input input[type='checkbox']:checked::after {
+.input input[type='checkbox']:checked::after,
+.combo input[type='checkbox']:checked::after {
   content: '';
   position: absolute;
-  inset: 4px;
+  inset: 5px;
   background: var(--color-select);
 }
 
@@ -561,14 +574,8 @@
   display: none;
 }
 
-.image-preview-btn:focus {
-  outline: none;
-}
-
 .image-preview-btn:focus-visible {
-  background: var(--color-select);
   border-color: var(--color-select);
-  color: var(--color-bg);
 }
 
 .file-btn:focus ~ .image-preview-btn {
@@ -629,6 +636,57 @@
   padding: 0;
 }
 
+/* --- Shared slider handle --- */
+
+.slider-handle::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: var(--color-fg);
+  border: 1px solid var(--color-border);
+}
+
+.slider-handle:focus-visible::-webkit-slider-thumb {
+  border-color: var(--color-select);
+}
+
+/* track-mode: slider-handle stretched over a wrapper div with ::before track */
+.time-slider-wrapper > .slider-handle,
+.tr-track-wrapper > .slider-handle {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 2rem;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+
+.time-slider-wrapper > .slider-handle::-webkit-slider-runnable-track,
+.tr-track-wrapper > .slider-handle::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 2rem;
+}
+
+.time-slider-wrapper > .slider-handle::-webkit-slider-thumb,
+.tr-track-wrapper > .slider-handle::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0.8rem;
+  height: 2rem;
+  cursor: ew-resize;
+}
+
+.tr-track-wrapper > .slider-handle {
+  pointer-events: none;
+}
+
+.tr-track-wrapper > .slider-handle::-webkit-slider-thumb {
+  pointer-events: all;
+}
+
 /* --- Alpha range slider --- */
 
 .control.color.has-alpha input[type='range'] {
@@ -652,14 +710,7 @@
   -webkit-appearance: none;
   width: 1rem;
   height: 1.4rem;
-  background: var(--color-fg);
-  border: 1px solid var(--color-muted);
   cursor: pointer;
-}
-
-.control.color.has-alpha:focus-within
-  input[type='range']::-webkit-slider-thumb {
-  background: var(--color-select);
 }
 
 /* --- TimeRange component --- */
@@ -704,9 +755,7 @@
 }
 
 .tr-mode-toggle:focus-visible {
-  background: var(--color-select);
   border-color: var(--color-select);
-  outline: none;
 }
 
 .tr-popup {
@@ -740,41 +789,6 @@
   transform: translateY(-50%);
   height: 0.8rem;
   background: var(--track-bg, var(--color-field));
-}
-
-.tr-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 100%;
-  height: 2rem;
-  background: transparent;
-  pointer-events: none;
-  outline: none;
-  cursor: pointer;
-}
-
-.tr-thumb::-webkit-slider-runnable-track {
-  background: transparent;
-  height: 2rem;
-}
-
-.tr-thumb::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 0.8rem;
-  height: 2rem;
-  background: var(--color-select);
-  border: 1px solid var(--color-bg);
-  cursor: ew-resize;
-  pointer-events: all;
-}
-
-.tr-thumb:focus-visible::-webkit-slider-thumb {
-  background: var(--color-fg);
 }
 
 /* --- Time input popup --- */
@@ -811,43 +825,34 @@
   user-select: none;
 }
 
-.time-sign:focus {
-  outline: none;
-}
-
 .time-sign:focus-visible {
-  background: var(--color-select);
   border-color: var(--color-select);
-  color: var(--color-bg);
 }
 
-/* Override .control input:not([type='checkbox']) and .control.has-unit input interference */
-.control.has-unit .time-slider {
+/* Override .control input:not([type='checkbox']) interference for track-mode sliders */
+.control.has-unit .time-slider-wrapper > .slider-handle {
+  height: 2rem;
   border: none;
   padding: 0;
-  height: 100%;
   background: transparent;
 }
 
-.time-slider {
-  -webkit-appearance: none;
-  appearance: none;
+.time-slider-wrapper {
+  position: relative;
   flex: 1;
   height: 100%;
-  outline: none;
-  cursor: pointer;
-  background: transparent;
 }
 
-.time-slider::-webkit-slider-runnable-track {
+.time-slider-wrapper::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   height: 0.8rem;
   background: var(--track-bg, var(--color-field));
-}
-
-.time-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 0;
-  height: 100%;
+  pointer-events: none;
 }
 
 /* --- Tip icon --- */
@@ -880,12 +885,12 @@
 }
 
 .group-tip {
-  position: absolute;
-  top: -0.6em;
-  right: 0;
+  position: relative;
+  top: -0.2rem;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: baseline;
   background: var(--color-bg);
-  display: flex;
-  align-items: center;
 }
 
 /* --- Tip popup --- */

@@ -420,6 +420,20 @@ async function main() {
 
   controls.addEventListener('open-settings', () => openSettings());
 
+  function pushModeChangedDefs() {
+    window.api.pushSettingsDefs({
+      ...engine.getParamsDefinitions(),
+      sketchName,
+      sketchDir,
+      mode: engine.getMode(),
+      canvasHint: engine.getCanvasHint(),
+      audioDuration: engine.getDuration(),
+    });
+  }
+
+  controls.addEventListener('mic-switch', pushModeChangedDefs);
+  controls.addEventListener('file-switch', pushModeChangedDefs);
+
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', async (e) => {
     e.preventDefault();

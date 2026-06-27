@@ -148,10 +148,14 @@ export default function Controls(elem) {
       mic: () => {
         window.api.switchToMic();
         engine?.loadMic();
+        elem.dispatchEvent(new CustomEvent('mic-switch'));
       },
       file: async () => {
         const filePath = await window.api.openAudioPicker();
-        if (filePath) engine?.loadAudio(filePath);
+        if (filePath) {
+          await engine?.loadAudio(filePath);
+          elem.dispatchEvent(new CustomEvent('file-switch'));
+        }
       },
     }),
     trackLength: elem.querySelector('[data-track-length]'),

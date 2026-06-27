@@ -210,6 +210,10 @@ export function runVisualizer(args) {
     const audioBase = args.audioPath
       ? path.basename(args.audioPath, path.extname(args.audioPath))
       : null;
+    const getAudioBase = () =>
+      args.audioPath
+        ? path.basename(args.audioPath, path.extname(args.audioPath))
+        : null;
     settingsWin = openSettingsWindow(
       {
         ...effectiveDefs,
@@ -218,6 +222,7 @@ export function runVisualizer(args) {
           effectiveDefs.initialRendering ?? args.initialRendering ?? null,
       },
       win,
+      getAudioBase,
     );
     settingsWin.webContents.once('did-finish-load', () => {
       if (!win.isDestroyed())

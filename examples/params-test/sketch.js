@@ -122,7 +122,7 @@ export default function sketch(p, audio, params) {
   params.group(
     'inputs',
     'Inputs',
-    { tip: 'One field per input type. Each has a tooltip (ⓘ icon).' },
+    { tip: 'One field per input type. Each has a tooltip.' },
     num,
     numUnit,
     numDec,
@@ -237,12 +237,11 @@ export default function sketch(p, audio, params) {
       {
         tip: 'Combo repeater: each row is a horizontal combo. Drag handles to reorder rows.',
       },
-      params('dx', 0, { type: 'number', label: 'X', flex: 1 }),
-      params('dy', 0, { type: 'number', label: 'Y', flex: 1 }),
+      params('dx', 0, { type: 'number', label: 'X' }),
+      params('dy', 0, { type: 'number', label: 'Y' }),
       params('dr', 15, {
         type: 'number',
         label: 'R',
-        flex: 'auto',
         unit: 'px',
       }),
     ),
@@ -299,7 +298,9 @@ export default function sketch(p, audio, params) {
     }
   }
 
-  p.setup = () => p.createCanvas(520, 640);
+  p.setup = () => p.createCanvas(p.windowWidth, p.windowHeight);
+
+  p.windowResized = () => p.resizeCanvas(p.windowWidth, p.windowHeight);
 
   p.draw = () => {
     p.background(0);

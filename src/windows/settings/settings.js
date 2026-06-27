@@ -41,7 +41,7 @@ function trackOrRenderMax() {
 }
 
 const panel = ParamsPanel(document.querySelector('#settings'));
-const renderPanel = RenderingPanel(document.querySelector('#rendering'));
+let renderPanel = RenderingPanel(document.querySelector('#rendering'));
 
 document.querySelectorAll('.btn').forEach(Button);
 
@@ -55,8 +55,15 @@ if (window.api.definitions.initialRendering) {
 }
 
 window.api.onDefinitionsChanged((defs) => {
+  const prevIsMic = !currentDefs.audioBase;
   currentDefs = defs;
   panel.build(defs);
+  if (!defs.audioBase !== prevIsMic) {
+    const values = renderPanel.getValues();
+    renderPanel.replaceChildren();
+    RenderingPanel(renderPanel);
+    renderPanel.applyValues(values);
+  }
 });
 
 window.api.onApplyRendering((r) => renderPanel.applyValues(r));
@@ -327,8 +334,13 @@ function ParamsPanel(elem) {
   function register(def) {
     // inject the dynamic max so an undefined `max` resolves to track/render
     // length (def comes from IPC and is frozen, so clone rather than mutate)
-    if (def.type === 'timerange' && def.max == null) {
-      def = { ...def, getMax: trackOrRenderMax };
+    if (def.type === 'timerange') {
+      const isMic = !currentDefs.audioBase;
+      def = {
+        ...def,
+        ...(def.max == null && { getMax: trackOrRenderMax }),
+        ...(isMic && { toggle: false, seek: false }),
+      };
     }
     const field = Input.Field(def, (key, value) => {
       window.api.updateParam(key, value);
