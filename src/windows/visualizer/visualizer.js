@@ -153,6 +153,11 @@ function resetAutoplay() {
     gallery.autoplayTimer = setInterval(galleryNext, gallery.autoplay * 1000);
 }
 
+function peaksArr() {
+  const p = engine.getPeaks(2000);
+  return p ? Array.from(p) : null;
+}
+
 async function switchSketch(index) {
   if (!gallery || isSwitching) return;
   isSwitching = true;
@@ -191,6 +196,8 @@ async function switchSketch(index) {
     galleryDir: galleryDir,
     galleryPaths: galleryPaths,
     canvasHint: engine.getCanvasHint(),
+    audioDuration: engine.getDuration(),
+    peaks: peaksArr(),
   });
   pushGalleryState();
 
@@ -292,6 +299,8 @@ async function main() {
     sketchDir,
     mode: engine.getMode(),
     canvasHint: engine.getCanvasHint(),
+    audioDuration: engine.getDuration(),
+    peaks: peaksArr(),
   });
 
   // -> mic mode
@@ -334,6 +343,8 @@ async function main() {
       sketchDir,
       mode: engine.getMode(),
       canvasHint: engine.getCanvasHint(),
+      audioDuration: engine.getDuration(),
+      peaks: peaksArr(),
     });
   }
 
@@ -411,6 +422,8 @@ async function main() {
         sketchDir,
         mode: engine.getMode(),
         canvasHint: engine.getCanvasHint(),
+        audioDuration: engine.getDuration(),
+        peaks: peaksArr(),
         ...(galleryDir && {
           galleryDir,
           galleryPaths,
@@ -436,6 +449,7 @@ async function main() {
       mode: engine.getMode(),
       canvasHint: engine.getCanvasHint(),
       audioDuration: engine.getDuration(),
+      peaks: peaksArr(),
     });
   }
 
@@ -478,6 +492,7 @@ async function main() {
       canvasHint: engine.getCanvasHint(),
       audioDuration: engine.getDuration(),
       initialRendering: currentRendering,
+      peaks: peaksArr(),
     });
   }
 

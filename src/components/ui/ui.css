@@ -668,41 +668,43 @@
 }
 
 /* track-mode: slider-handle stretched over a wrapper div with ::before track */
-.time-slider-wrapper > .slider-handle,
-.tr-track-wrapper > .slider-handle {
+.wave-track-wrapper > .slider-handle {
   -webkit-appearance: none;
   appearance: none;
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  inset: 0;
   width: 100%;
-  height: 2rem;
+  height: 100%;
   background: transparent;
   outline: none;
-  cursor: pointer;
-}
-
-.time-slider-wrapper > .slider-handle::-webkit-slider-runnable-track,
-.tr-track-wrapper > .slider-handle::-webkit-slider-runnable-track {
-  background: transparent;
-  height: 2rem;
-}
-
-.time-slider-wrapper > .slider-handle::-webkit-slider-thumb,
-.tr-track-wrapper > .slider-handle::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 0.8rem;
-  height: 2rem;
   cursor: ew-resize;
 }
 
-.tr-track-wrapper > .slider-handle {
+.wave-track-wrapper > .slider-handle::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  height: 100%;
+}
+
+.wave-track-wrapper > .slider-handle::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 3px;
+  height: 100%;
+  background: var(--color-select);
+  border: none;
+  cursor: ew-resize;
+}
+
+.wave-track-wrapper > .slider-handle:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px var(--color-select);
+}
+
+.wave-track-wrapper[data-range] > .slider-handle {
   pointer-events: none;
 }
 
-.tr-track-wrapper > .slider-handle::-webkit-slider-thumb {
+.wave-track-wrapper[data-range] > .slider-handle::-webkit-slider-thumb {
   pointer-events: all;
 }
 
@@ -777,7 +779,9 @@
   border-color: var(--color-select);
 }
 
-.tr-popup {
+/* --- Time / TimeRange shared popup --- */
+
+.time-input-popup {
   position: fixed;
   z-index: 1000;
   background: var(--color-bg);
@@ -785,46 +789,27 @@
   box-sizing: border-box;
 }
 
-.tr-popup-row {
+.time-input-popup-row {
   display: flex;
   align-items: stretch;
   gap: 0.4rem;
   height: 3rem;
 }
 
-.tr-track-wrapper {
+.wave-track-wrapper {
   position: relative;
   flex: 1;
   height: 100%;
 }
 
-/* thin gradient track, centered vertically (mirrors .time-slider track) */
-.tr-track-wrapper::before {
-  content: '';
+.wave-track-wrapper::before {
+  content: none;
+}
+
+.wave-waveform {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 0.8rem;
-  background: var(--track-bg, var(--color-field));
-}
-
-/* --- Time input popup --- */
-
-.time-popup {
-  position: fixed;
-  z-index: 1000;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  box-sizing: border-box;
-}
-
-.time-popup-row {
-  display: flex;
-  align-items: stretch;
-  gap: 0.4rem;
-  height: 3rem;
+  inset: 0;
+  cursor: ew-resize;
 }
 
 .time-sign {
@@ -849,29 +834,11 @@
 }
 
 /* Override .control input:not([type='checkbox']) interference for track-mode sliders */
-.control.has-unit .time-slider-wrapper > .slider-handle {
-  height: 2rem;
+.control.has-unit .wave-track-wrapper > .slider-handle {
+  height: 100%;
   border: none;
   padding: 0;
   background: transparent;
-}
-
-.time-slider-wrapper {
-  position: relative;
-  flex: 1;
-  height: 100%;
-}
-
-.time-slider-wrapper::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 0.8rem;
-  background: var(--track-bg, var(--color-field));
-  pointer-events: none;
 }
 
 /* --- Tip icon --- */

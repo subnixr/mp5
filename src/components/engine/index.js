@@ -1,6 +1,7 @@
 import sheet from './engine.css' with { type: 'css' };
 import {
   computePeakGain,
+  computePeaks,
   computeFrameAt,
   createFileAudio,
   createMicAudio,
@@ -80,6 +81,11 @@ export default function Engine(elem) {
   elem.getNormGain = () => (elem.getMode() === 'mic' ? 1 : normGain);
   elem.getAudioSource = () => audioSource;
   elem.getPrecomputedData = () => precomputedData;
+  elem.getPeaks = (n) => {
+    const buf = soundFile?.buffer;
+    if (!buf) return null;
+    return computePeaks(buf, n);
+  };
   elem.getPausedFrame = () => pausedFrame;
   elem.getSpectrum = () => activeAudio?.getSpectrum() ?? null;
   elem.getVolumeLevel = () => activeAudio?.getVolumeLevel() ?? 0;

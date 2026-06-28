@@ -36,6 +36,23 @@ function parseTimecode(str) {
 
 let currentDefs = window.api.definitions ?? { groups: [], fields: [] };
 
+function defsGetPeaks(n) {
+  const src = currentDefs.peaks;
+  if (!src?.length) return null;
+  const peaks = new Float32Array(n);
+  const ratio = src.length / n;
+  for (let i = 0; i < n; i++) {
+    const start = Math.floor(i * ratio);
+    const end = Math.min(Math.floor((i + 1) * ratio), src.length);
+    let max = 0;
+    for (let j = start; j < end; j++) if (src[j] > max) max = src[j];
+    peaks[i] = max;
+  }
+  return peaks;
+}
+
+Input.setSharedGetPeaks(defsGetPeaks);
+
 // undefined-max resolution for timerange controls: track length when a file is
 // loaded, otherwise the configured render length (mic mode)
 function trackOrRenderMax() {
@@ -258,6 +275,7 @@ function RenderingPanel(elem) {
     toggle: !isMic, // mic: lock to skip/length, no toggle
     seek: !isMic,
     getMax: trackOrRenderMax,
+    getPeaks: defsGetPeaks,
   });
 
   const formatCtrl = Input.Select({

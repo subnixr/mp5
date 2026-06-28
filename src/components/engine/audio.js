@@ -6,6 +6,23 @@ const DEFAULT_BINS = 4096;
 // the sparse noise of 256 bins (which gave only 2 bins for kick).
 const TRANSIENT_BINS = 512;
 
+export function computePeaks(buffer, n) {
+  const data = buffer.getChannelData(0);
+  const blockSize = Math.floor(data.length / n);
+  const peaks = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const start = i * blockSize;
+    const end = Math.min(start + blockSize, data.length);
+    let max = 0;
+    for (let j = start; j < end; j++) {
+      const abs = Math.abs(data[j]);
+      if (abs > max) max = abs;
+    }
+    peaks[i] = max;
+  }
+  return peaks;
+}
+
 export function computePeakGain(buffer, maxGain = 4) {
   const windowSize = 2048;
   let maxRms = 0;

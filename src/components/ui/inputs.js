@@ -895,6 +895,11 @@ export function Grid(def, onSubChange) {
   return container;
 }
 
+let sharedGetPeaks = null;
+export function setSharedGetPeaks(fn) {
+  sharedGetPeaks = fn;
+}
+
 function createControl(def) {
   if (def.type === 'number') return Number(def);
   if (def.type === 'text') return Text(def);
@@ -904,8 +909,8 @@ function createControl(def) {
   if (def.type === 'file') return File(def);
   if (def.type === 'image') return Image(def);
   if (def.type === 'textarea') return Textarea(def);
-  if (def.type === 'time') return Time(def);
-  if (def.type === 'timerange') return TimeRange(def);
+  if (def.type === 'time') return Time({ ...def, getPeaks: sharedGetPeaks });
+  if (def.type === 'timerange') return TimeRange({ ...def, getPeaks: sharedGetPeaks });
   if (def.type === 'repeater') return Repeater(def);
   if (def.type === 'combo') return Combo(def);
   if (def.type === 'grid') return Grid(def);
@@ -1094,6 +1099,68 @@ function positionPopup(anchor, popup) {
   popup.dataset.popupDir = goDown ? 'down' : 'up';
 }
 
+function TimeInputPopup(getPeaks) {
+  const popup = document.createElement('div');
+  popup.className = 'time-input-popup';
+  popup.hidden = true;
+
+  const row = document.createElement('div');
+  row.className = 'time-input-popup-row';
+
+  const trackWrapper = document.createElement('div');
+  trackWrapper.className = 'wave-track-wrapper';
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'wave-waveform';
+  trackWrapper.appendChild(canvas);
+  row.appendChild(trackWrapper);
+  popup.appendChild(row);
+
+  let cleanupScroll = null;
+
+  function close() {
+    popup.hidden = true;
+    cleanupScroll?.();
+    cleanupScroll = null;
+  }
+
+  function open(anchor, onOpen) {
+    popup.hidden = false;
+    positionPopup(anchor, popup);
+    onOpen?.();
+    cleanupScroll = onScrollAway(anchor, close);
+  }
+
+  function drawWaveform(getRange) {
+    if (!getPeaks) return;
+    const w = trackWrapper.clientWidth;
+    const h = trackWrapper.clientHeight;
+    if (!w || !h) return;
+    const peaks = getPeaks(w);
+    if (!peaks) return;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    const maxPeak = peaks.reduce((m, v) => Math.max(m, v), 0) || 1;
+    const cy = h / 2;
+    const maxBarH = cy - 1;
+    const style = getComputedStyle(canvas);
+    const colorFg = style.getPropertyValue('--color-fg').trim();
+    const colorBorder = style.getPropertyValue('--color-border').trim();
+    const { startPct, endPct } = getRange();
+    for (let i = 0; i < peaks.length; i++) {
+      const pct = i / peaks.length;
+      const barH = Math.max(1, Math.sqrt(peaks[i] / maxPeak) * maxBarH);
+      const selected = pct >= startPct && pct < endPct;
+      ctx.fillStyle = selected ? colorFg : colorBorder;
+      ctx.fillRect(i, cy - barH, 1, barH * 2);
+    }
+  }
+
+  return { popup, row, trackWrapper, canvas, open, close, drawWaveform };
+}
+
 function parseTimecodeStr(str) {
   str = str.trim();
   const neg = str.startsWith('-');
@@ -1205,12 +1272,16 @@ export function TimeRange(field) {
     inputsRow.appendChild(toggleBtn);
   }
 
-  const popup = document.createElement('div');
-  popup.className = 'tr-popup';
-  popup.hidden = true;
-
-  const popupRow = document.createElement('div');
-  popupRow.className = 'tr-popup-row';
+  const {
+    popup,
+    row: popupRow,
+    trackWrapper,
+    canvas: waveCanvas,
+    open: openWavePopup,
+    close: closePopup,
+    drawWaveform: drawWave,
+  } = TimeInputPopup(field.getPeaks);
+  trackWrapper.dataset.range = '';
 
   function makeSignBtn() {
     const b = document.createElement('button');
@@ -1222,9 +1293,6 @@ export function TimeRange(field) {
 
   const fromSignBtn = makeSignBtn();
   const toSignBtn = makeSignBtn();
-
-  const trackWrapper = document.createElement('div');
-  trackWrapper.className = 'tr-track-wrapper';
 
   function makeThumb() {
     const t = makeSliderHandle();
@@ -1238,12 +1306,51 @@ export function TimeRange(field) {
   const startThumb = makeThumb();
   const endThumb = makeThumb();
 
+  popupRow.insertBefore(fromSignBtn, trackWrapper);
   trackWrapper.appendChild(startThumb);
   trackWrapper.appendChild(endThumb);
-  popupRow.appendChild(fromSignBtn);
-  popupRow.appendChild(trackWrapper);
   popupRow.appendChild(toSignBtn);
-  popup.appendChild(popupRow);
+
+  function getDrawRange() {
+    const max = parseFloat(startThumb.max) || 0;
+    const range = max - minVal;
+    return {
+      startPct: range > 0 ? (parseFloat(startThumb.value) - minVal) / range : 0,
+      endPct: range > 0 ? (parseFloat(endThumb.value) - minVal) / range : 1,
+    };
+  }
+
+  waveCanvas.addEventListener('mousedown', (e) => {
+    const max = getMax();
+    if (max <= minVal) return;
+
+    function toTime(clientX) {
+      const rect = waveCanvas.getBoundingClientRect();
+      return Math.max(minVal, Math.min(minVal + ((clientX - rect.left) / rect.width) * (max - minVal), max));
+    }
+
+    const t = toTime(e.clientX);
+    const start = parseFloat(startThumb.value);
+    const end = parseFloat(endThumb.value);
+    const thumb = Math.abs(t - start) <= Math.abs(t - end) ? startThumb : endThumb;
+
+    function move(ev) {
+      const t = toTime(ev.clientX);
+      thumb.value = thumb === startThumb
+        ? Math.min(t, parseFloat(endThumb.value))
+        : Math.max(t, parseFloat(startThumb.value));
+      thumb.dispatchEvent(new Event('input'));
+    }
+
+    function up() {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    }
+
+    move(e);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  });
 
   container.appendChild(inputsRow);
   container.appendChild(popup);
@@ -1358,6 +1465,7 @@ export function TimeRange(field) {
     fromInp.value = fmtFrom(signedFromHandle(startPos, signFrom, max));
     renderField2(startPos, endPos, max);
     updateGradient();
+    drawWave(getDrawRange);
     emitChange();
   });
 
@@ -1371,6 +1479,7 @@ export function TimeRange(field) {
     }
     renderField2(startPos, endPos, max);
     updateGradient();
+    drawWave(getDrawRange);
     emitChange();
   });
 
@@ -1387,6 +1496,7 @@ export function TimeRange(field) {
     endThumb.value = endPos;
     renderField2(startPos, endPos, max);
     updateGradient();
+    drawWave(getDrawRange);
     emitChange();
   });
 
@@ -1405,6 +1515,7 @@ export function TimeRange(field) {
     }
     endThumb.value = endPos;
     updateGradient();
+    drawWave(getDrawRange);
     emitChange();
   });
 
@@ -1474,27 +1585,23 @@ export function TimeRange(field) {
     if (v != null) toInp.value = fmtTo(v);
   });
 
-  let cleanupScroll = null;
-
   function openPopup() {
     if (field.seek === false) return;
     if (getMax() <= minVal) return;
     syncHandles();
-    popup.hidden = false;
-    positionPopup(container, popup);
-    cleanupScroll = onScrollAway(container, closePopup);
-  }
-
-  function closePopup() {
-    popup.hidden = true;
-    cleanupScroll?.();
-    cleanupScroll = null;
+    openWavePopup(container, () => drawWave(getDrawRange));
   }
 
   fromInp.addEventListener('focus', () => {
     if (popup.hidden) openPopup();
   });
+  fromInp.addEventListener('click', () => {
+    if (popup.hidden) openPopup();
+  });
   toInp.addEventListener('focus', () => {
+    if (popup.hidden) openPopup();
+  });
+  toInp.addEventListener('click', () => {
     if (popup.hidden) openPopup();
   });
 
@@ -1574,12 +1681,15 @@ export function Time(field) {
   }
   applyFormatUI();
 
-  const popup = document.createElement('div');
-  popup.className = 'time-popup';
-  popup.hidden = true;
-
-  const popupRow = document.createElement('div');
-  popupRow.className = 'time-popup-row';
+  const {
+    popup,
+    row: popupRow,
+    trackWrapper: sliderWrapper,
+    canvas: timeWaveCanvas,
+    open: openWavePopup,
+    close: closePopup,
+    drawWaveform: drawWave,
+  } = TimeInputPopup(field.getPeaks);
 
   const signBtn = document.createElement('button');
   signBtn.className = 'time-sign';
@@ -1592,16 +1702,29 @@ export function Time(field) {
   slider.value = 0;
   slider.max = 0;
 
-  const sliderWrapper = document.createElement('div');
-  sliderWrapper.className = 'time-slider-wrapper';
+  popupRow.insertBefore(signBtn, sliderWrapper);
   sliderWrapper.appendChild(slider);
-
-  popupRow.appendChild(signBtn);
-  popupRow.appendChild(sliderWrapper);
-  popup.appendChild(popupRow);
 
   let sign = '+';
   let suppressSync = false;
+
+  function getDrawRange() {
+    const dur = parseFloat(slider.max) || 0;
+    const pos = parseFloat(slider.value) || 0;
+    return {
+      startPct: sign === '+' ? 0 : pos / dur,
+      endPct: sign === '+' ? (dur > 0 ? pos / dur : 0) : 1,
+    };
+  }
+
+  timeWaveCanvas.addEventListener('click', (e) => {
+    const dur = parseFloat(slider.max) || 0;
+    if (!dur) return;
+    const rect = timeWaveCanvas.getBoundingClientRect();
+    const t = ((e.clientX - rect.left) / rect.width) * dur;
+    slider.value = Math.max(0, Math.min(t, dur));
+    slider.dispatchEvent(new Event('input'));
+  });
 
   // Thumb represents track position in both modes:
   //   + → output = trackPos (seconds from start)
@@ -1648,6 +1771,7 @@ export function Time(field) {
   function applyPopupChange(formatted) {
     input.value = formatted;
     updateGradient();
+    drawWave(getDrawRange);
     const parsed = parseTimecodeStr(formatted);
     if (parsed != null) emit(container, parsed);
     suppressSync = true;
@@ -1666,8 +1790,9 @@ export function Time(field) {
   });
 
   input.addEventListener('input', () => {
-    if (!suppressSync) syncSliderFromInput();
     if (!suppressSync) {
+      syncSliderFromInput();
+      drawWave(getDrawRange);
       const parsed = parseTimecodeStr(input.value);
       if (parsed != null) emit(container, parsed);
     }
@@ -1678,14 +1803,6 @@ export function Time(field) {
     if (parsed != null) input.value = fmt(parsed);
   });
 
-  let cleanupScroll = null;
-
-  function closePopup() {
-    popup.hidden = true;
-    cleanupScroll?.();
-    cleanupScroll = null;
-  }
-
   function openPopup() {
     if (field.seek === false) return;
     slider.max = field.getDuration
@@ -1693,9 +1810,7 @@ export function Time(field) {
       : (field.max ?? 3600);
     if (field.getDuration && slider.max == 0) return;
     syncSliderFromInput();
-    popup.hidden = false;
-    positionPopup(container, popup);
-    cleanupScroll = onScrollAway(container, closePopup);
+    openWavePopup(container, () => drawWave(getDrawRange));
   }
 
   popup.addEventListener('mousedown', (e) => {
@@ -1703,6 +1818,9 @@ export function Time(field) {
   });
 
   input.addEventListener('focus', () => {
+    if (popup.hidden) openPopup();
+  });
+  input.addEventListener('click', () => {
     if (popup.hidden) openPopup();
   });
 
