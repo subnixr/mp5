@@ -505,7 +505,7 @@ export function File(field) {
 
   function update(path) {
     currentPath = path;
-    btn.textContent = path ? path.split('/').pop() : '';
+    btn.textContent = path ? (field.fullPath ? path : path.split('/').pop()) : '';
     container.classList.toggle('has-value', !!path);
   }
 
@@ -562,7 +562,7 @@ export function Image(field) {
 
   function update(path) {
     currentPath = path;
-    btn.textContent = path ? path.split('/').pop() : '';
+    btn.textContent = path ? (field.fullPath ? path : path.split('/').pop()) : '';
     container.classList.toggle('has-value', !!path);
   }
 

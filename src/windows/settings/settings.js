@@ -191,6 +191,7 @@ function GuiPanel(elem) {
       type: 'file',
       label: 'Config file',
       noClear: true,
+      fullPath: true,
       value: window.api.definitions.configPath,
     },
     async (_key, filePath) => {
