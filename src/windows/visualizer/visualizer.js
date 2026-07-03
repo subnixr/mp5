@@ -29,6 +29,18 @@ let galleryDir = window.args.galleryDir ?? null;
 let galleryPaths = window.args.galleryPaths ?? null;
 let galleryNames = window.args.galleryNames ?? null;
 let galleryPreviews = window.args.galleryPreviews ?? null;
+let sketchName = null;
+
+function updateTitle() {
+  const sketchSegment = galleryDir ? galleryDir.split('/').pop() : sketchName;
+  const audioSegment =
+    engine.getMode() === 'file'
+      ? engine.getAudioPath()?.split('/').pop()
+      : null;
+  window.api.setTitle(
+    ['mp5', sketchSegment, audioSegment].filter(Boolean).join(' - '),
+  );
+}
 
 async function importSketch(path, bust = false) {
   if (path) {
@@ -187,7 +199,7 @@ async function switchSketch(index) {
   window.api.setWatchSketch(newPath);
   controls.setSketchPath(newPath);
 
-  const sketchName = galleryNames?.[newPath] ?? sketchNameFromPath(newPath);
+  sketchName = galleryNames?.[newPath] ?? sketchNameFromPath(newPath);
   window.api.pushSettingsDefs({
     ...engine.getParamsDefinitions(),
     sketchName,
@@ -200,6 +212,7 @@ async function switchSketch(index) {
     peaks: peaksArr(),
   });
   pushGalleryState();
+  updateTitle();
 
   engine.fadeIn();
   isSwitching = false;
@@ -273,7 +286,7 @@ async function main() {
     audioPath ? engine.loadAudio(audioPath) : engine.loadMic(),
     engine.loadSketch(sketch ?? eq),
   ]);
-  let sketchName = sketchPath
+  sketchName = sketchPath
     ? (galleryNames?.[sketchPath] ??
       window.args.sketchDisplayName ??
       sketchNameFromPath(sketchPath))
@@ -302,6 +315,7 @@ async function main() {
     audioDuration: engine.getDuration(),
     peaks: peaksArr(),
   });
+  updateTitle();
 
   // -> mic mode
   if (!audioPath) {
@@ -432,6 +446,7 @@ async function main() {
         }),
       });
       if (gallery) pushGalleryState();
+      updateTitle();
     }
   }
 
@@ -451,6 +466,7 @@ async function main() {
       audioDuration: engine.getDuration(),
       peaks: peaksArr(),
     });
+    updateTitle();
   }
 
   controls.addEventListener('mic-switch', pushModeChangedDefs);
@@ -468,6 +484,7 @@ async function main() {
       await applySketchResult(result);
     } else if (result.type === 'audio') {
       await engine.loadAudio(result.path);
+      updateTitle();
     } else if (result.type === 'preset') {
       applyPreset(result);
     } else if (result.type === 'error') {

@@ -1,4 +1,8 @@
 .controls {
+  --color-dim: #999;
+  --color-fg: #fff;
+  --color-select: #4dd0e1;
+
   position: fixed;
   z-index: 10;
   left: 0;
@@ -238,7 +242,7 @@
 }
 
 .controls[data-bar='seek'][data-mode='file'] [data-filename]:hover {
-  color: var(--color-text);
+  color: var(--color-fg);
   cursor: pointer;
 }
 

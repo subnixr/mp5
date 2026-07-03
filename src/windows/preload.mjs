@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('api', {
   onAppPrefsUpdate: (cb) =>
     ipcRenderer.on('app-prefs-update', (_e, p) => cb(p)),
   setWatchSketch: (path) => ipcRenderer.send('set-watch-sketch', path),
+  setTitle: (title) => ipcRenderer.send('set-title', title),
   saveSketchPreview: (galleryDir, sketchPath, dataURL) =>
     ipcRenderer.invoke('save-sketch-preview', {
       galleryDir,

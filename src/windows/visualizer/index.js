@@ -599,6 +599,12 @@ export function runVisualizer(args) {
 
   ipcMain.on('set-watch-sketch', onSetWatchSketch);
 
+  const onSetTitle = (_e, title) => {
+    if (!win.isDestroyed()) win.setTitle(title);
+  };
+
+  ipcMain.on('set-title', onSetTitle);
+
   const onSaveSketchPreview = async (
     _e,
     { galleryDir: dir, sketchPath, dataURL },

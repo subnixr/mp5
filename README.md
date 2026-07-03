@@ -9,6 +9,12 @@ MP5 is an Electron app that plays time and audio-driven [p5.js](https://p5js.org
 - **Render** — headless, frame-by-frame export to a video file (via ffmpeg), with optional audio and alpha channel.
 - **Devtool** — hot-reload on sketch edits, a live params panel, and a sketch gallery make it a workbench for building visuals.
 
+<div style="text-align:center">
+
+![screenshot](screenshot.png)
+
+</div>
+
 ## Installation & requirements
 
 **ffmpeg is required** — both `ffmpeg` and `ffprobe` must be available in your `PATH` (they back render mode and audio probing).
@@ -77,19 +83,19 @@ Both positional arguments are optional and order-independent. A `.js` or `.zip` 
 
 ### Visualizer shortcuts
 
-| Key                          | Action                                             |
-| ---------------------------- | -------------------------------------------------- |
-| `Space`                      | Play/pause (file/no-audio) or toggle mic listening |
-| `Return` / `F11`             | Toggle fullscreen                                  |
-| `Left` / `Right`             | Seek −10 / +10 seconds                             |
-| `Shift+Left` / `Shift+Right` | Seek −1 / +1 frame (file only)                     |
-| `Home` / `End`               | Seek to start / end (file only)                    |
-| `Up` / `Down`, wheel         | Volume +/−                                         |
-| `M`                          | Toggle mute                                        |
-| `Ctrl+Space`, right-click    | Pin / unpin controls                               |
-| `Tab` / `Shift+Tab`          | Next / previous sketch (gallery mode)              |
-| `Ctrl+R`                     | Reload window                                      |
-| `F10`                        | Open gallery window; focus if open, close if focused |
+| Key                          | Action                                                |
+| ---------------------------- | ----------------------------------------------------- |
+| `Space`                      | Play/pause (file/no-audio) or toggle mic listening    |
+| `Return` / `F11`             | Toggle fullscreen                                     |
+| `Left` / `Right`             | Seek −10 / +10 seconds                                |
+| `Shift+Left` / `Shift+Right` | Seek −1 / +1 frame (file only)                        |
+| `Home` / `End`               | Seek to start / end (file only)                       |
+| `Up` / `Down`, wheel         | Volume +/−                                            |
+| `M`                          | Toggle mute                                           |
+| `Ctrl+Space`, right-click    | Pin / unpin controls                                  |
+| `Tab` / `Shift+Tab`          | Next / previous sketch (gallery mode)                 |
+| `Ctrl+R`                     | Reload window                                         |
+| `F10`                        | Open gallery window; focus if open, close if focused  |
 | `F12`                        | Open settings window; focus if open, close if focused |
 
 The controls bar at the bottom mirrors these actions with clickable widgets (input switch, play/loop, seek/spectrum bar, volume, params, gallery, sketch picker, fullscreen). It auto-hides after 3s and can be pinned.
