@@ -2,7 +2,11 @@
 
 export default function (p, state) {
   function formatTime(s) {
-    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const total = Math.round(s * 1000);
+    const mins = String(Math.floor(total / 60000)).padStart(2, '0');
+    const secs = String(Math.floor(total / 1000) % 60).padStart(2, '0');
+    const ms = String(total % 1000).padStart(3, '0');
+    return `${mins}:${secs}.${ms}`;
   }
 
   function drawFreqBars(spectrum, level) {
@@ -48,7 +52,7 @@ export default function (p, state) {
   function clampLabelX(x) {
     p.textFont('Hermit');
     p.textSize(16);
-    const hw = p.textWidth('00:00') / 2;
+    const hw = p.textWidth('00:00.000') / 2;
     return Math.max(hw, Math.min(p.width - hw, x));
   }
 

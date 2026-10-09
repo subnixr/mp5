@@ -72,22 +72,44 @@ export async function precompute(
   analyser.connect(offlineCtx.destination);
   source.start(0);
 
+  const capture = (i) => {
+    const spectrum = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(spectrum);
+    const time = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(time);
+    const rms = Math.sqrt(time.reduce((s, v) => s + v * v, 0) / time.length);
+    frameData[i] = {
+      spectrum,
+      amplitude: Math.min(1, rms * normGain),
+    };
+    offlineCtx.resume();
+  };
+
+  // suspend() is quantized to the 128-sample render quantum and must land
+  // before the end of the render: tail frames can be unschedulable (rejects
+  // or throws), leaving holes that are backfilled below.
   for (let i = 0; i < totalFrames; i++) {
-    offlineCtx.suspend(i / fps).then(() => {
-      const spectrum = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(spectrum);
-      const time = new Float32Array(analyser.fftSize);
-      analyser.getFloatTimeDomainData(time);
-      const rms = Math.sqrt(time.reduce((s, v) => s + v * v, 0) / time.length);
-      frameData[i] = {
-        spectrum,
-        amplitude: Math.min(1, rms * normGain),
-      };
-      offlineCtx.resume();
-    });
+    try {
+      offlineCtx
+        .suspend(i / fps)
+        .then(() => capture(i))
+        .catch(() => {});
+    } catch {
+      // unschedulable frame, backfilled below
+    }
   }
 
   await offlineCtx.startRendering();
+
+  // Carry the previous frame forward rather than dropping to silence, which
+  // would fire a fake transient on the last frame(s).
+  for (let i = 0; i < totalFrames; i++) {
+    frameData[i] ??= frameData[i - 1] ?? {
+      spectrum: new Uint8Array(analyser.frequencyBinCount),
+      amplitude: 0,
+    };
+  }
+
   return { frameData, sampleRate, fps, duration };
 }
 

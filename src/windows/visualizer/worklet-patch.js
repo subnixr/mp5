@@ -17,22 +17,23 @@
     '      return _origProcess.call(this, inputs, outputs, params);' +
     '    };' +
     '  }' +
-    '  _reg(name, cls);' +
+    '  try { _reg(name, cls); } catch (e) {}' +
     '};';
 
   var shimBlob = new Blob([shimCode], { type: 'application/javascript' });
   var SHIM_URL = URL.createObjectURL(shimBlob);
 
   var _addModule = AudioWorklet.prototype.addModule;
-  var _shimmed = new WeakSet();
+  var _shimmed = new WeakMap();
 
+  // Every call waits for the shim: p5.sound adds its modules in parallel, and
+  // one registered before the shim exists would be unknown to it.
   AudioWorklet.prototype.addModule = function (url, options) {
     var self = this;
-    if (_shimmed.has(self)) {
-      return _addModule.call(self, url, options);
+    if (!_shimmed.has(self)) {
+      _shimmed.set(self, _addModule.call(self, SHIM_URL));
     }
-    _shimmed.add(self);
-    return _addModule.call(self, SHIM_URL).then(function () {
+    return _shimmed.get(self).then(function () {
       return _addModule.call(self, url, options);
     });
   };

@@ -19,6 +19,10 @@ function createSlot() {
   return slot;
 }
 
+// A sketch whose setup() has not run by then is stuck in preload (p5 never
+// decrements the preload counter for an asset that fails to load).
+const SKETCH_LOAD_TIMEOUT_MS = 10000;
+
 function resumeAudioContext() {
   const ctx = p5.prototype.getAudioContext?.();
   if (ctx?.state !== 'running') ctx?.resume();
@@ -65,6 +69,7 @@ export default function Engine(elem) {
   let activeVirtualClock = null; // set when no audio source is active in visualizer mode
   let activeParams = null; // params instance of the current front sketch
   let preservedParams = {}; // param values persisted across sketch loads
+  let loadQueue = Promise.resolve(); // serializes loadSketch: one back instance at a time
 
   elem.getInstance = () => instances[0];
   elem.getMode = () =>
@@ -158,7 +163,8 @@ export default function Engine(elem) {
 
   // Wraps sketch so onReady fires after setup() completes.
   // Creates the appropriate audio object based on current mode.
-  function wrapSketch(sketch, onReady) {
+  // load: { cancelled, fail(err) } — state of the loadSketch call that owns it.
+  function wrapSketch(sketch, load, onReady) {
     return (p) => {
       let audio;
       if (renderFps) {
@@ -187,7 +193,19 @@ export default function Engine(elem) {
 
       const originalSetup = p.setup || function () {};
       p.setup = function () {
-        originalSetup.call(p);
+        // p5 still runs setup() on a discarded instance once its preload ends
+        if (!load.cancelled) {
+          try {
+            originalSetup.call(p);
+          } catch (err) {
+            load.fail(err);
+          }
+        }
+        if (load.cancelled) {
+          p.draw = function () {};
+          p.noLoop();
+          return;
+        }
 
         // wrap draw here so sketches that define p.draw inside setup are covered
         const originalDraw = p.draw || function () {};
@@ -215,7 +233,16 @@ export default function Engine(elem) {
     };
   }
 
-  elem.loadSketch = async (sketch, opts = {}) => {
+  // Loads run one at a time: overlapping loads would share the single back
+  // slot and re-register p5.sound's worklets while they are still loading.
+  elem.loadSketch = (sketch, opts = {}) => {
+    const run = () => doLoadSketch(sketch, opts);
+    const result = loadQueue.then(run, run);
+    loadQueue = result.catch(() => {});
+    return result;
+  };
+
+  async function doLoadSketch(sketch, opts) {
     currentSketchFn = sketch;
 
     if (opts.clearParams) {
@@ -228,12 +255,31 @@ export default function Engine(elem) {
     // so the audio object has data from the first draw call.
     if (precomputePromise) await precomputePromise;
 
-    return new Promise((resolve) => {
-      // cancel any pending back instance before loading new one
-      instances[1]?.remove();
-      instances[1] = null;
+    return new Promise((resolve, reject) => {
+      const load = { cancelled: false };
+      const timer = setTimeout(
+        () =>
+          load.fail(
+            new Error(
+              'sketch load timed out: preload never finished (missing asset?)',
+            ),
+          ),
+        SKETCH_LOAD_TIMEOUT_MS,
+      );
+      // Abandon the back instance and keep the current front sketch running.
+      load.fail = (err) => {
+        if (load.cancelled) return;
+        load.cancelled = true;
+        clearTimeout(timer);
+        instances[1]?.noLoop();
+        slots[1].replaceChildren();
+        instances[1] = null;
+        reject(err);
+      };
 
-      const wrapped = wrapSketch(sketch, (params) => {
+      const wrapped = wrapSketch(sketch, load, (params) => {
+        clearTimeout(timer);
+
         slots = swap(slots);
         instances = swap(instances);
 
@@ -263,9 +309,13 @@ export default function Engine(elem) {
         resolve();
       });
 
-      instances[1] = new p5(wrapped, slots[1]);
+      try {
+        instances[1] = new p5(wrapped, slots[1]);
+      } catch (err) {
+        load.fail(err);
+      }
     });
-  };
+  }
 
   elem.loadAudio = async (path) => {
     if (!path) {
@@ -277,7 +327,8 @@ export default function Engine(elem) {
     activeVirtualClock = null;
     resumeAudioContext();
 
-    const wasmic = audioSource === mic;
+    // audioSource and mic are both null before any source is set: not mic mode
+    const wasmic = (mic != null || micPending != null) && audioSource === mic;
 
     // Disconnect mic from master output when switching to file mode
     if (mic) mic.disconnect();
@@ -322,6 +373,9 @@ export default function Engine(elem) {
             resolvePrecompute();
             precomputePromise = null;
           } else {
+            // play() needs p5.sound's worklets, which load during the first
+            // sketch's preload: wait for a sketch load still in flight.
+            await loadQueue;
             soundFile.play();
             startPolling();
           }
